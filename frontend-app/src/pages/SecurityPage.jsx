@@ -11,6 +11,7 @@ import CampusMapPanel from "../components/security/CampusMapPanel";
 import NightWalkPanel from "../components/security/NightWalkPanel";
 import GuardsOnDutyPanel from "../components/security/GuardsOnDutyPanel";
 import PublicAlertModal from "../components/security/PublicAlertModal";
+import SecurityCommandPanel from "../components/security/SecurityCommandPanel";
 import "../styles/security-dashboard.css";
 
 const initialAlerts = [
@@ -122,6 +123,7 @@ export default function SecurityPage() {
   const [audioMuted, setAudioMuted] = useState(false);
   const [mapMode, setMapMode] = useState("3D Campus");
   const [notice, setNotice] = useState("");
+  const [layers, setLayers] = useState({ heatmap: true, patrols: false, cctv: false });
 
   const flash = (msg) => {
     setNotice(msg);
@@ -201,6 +203,10 @@ export default function SecurityPage() {
     (a) => a.priority === "URGENT" && a.status === "Pending"
   );
 
+  const handleLayerChange = (layer, value) => {
+    setLayers((current) => ({ ...current, [layer]: typeof value === "boolean" ? value : !current[layer] }));
+  };
+
   return (
     <div className="security-app">
       <div className="security-shell">
@@ -247,10 +253,17 @@ export default function SecurityPage() {
             onMapModeChange={setMapMode}
             selectedAlert={selectedAlert}
             onAssignGuard={handleAssignGuard}
+            layers={layers}
+            focusIncident={selectedAlert?.id}
           />
 
           {/* RIGHT PANEL: NIGHT WALKS & GUARDS ON DUTY */}
           <div className="sec-right-col">
+            <SecurityCommandPanel
+              layers={layers}
+              onLayerChange={handleLayerChange}
+              onFocusIncident={() => setSelectedAlert(initialAlerts[0])}
+            />
             <NightWalkPanel nightWalks={nightWalks} />
             <GuardsOnDutyPanel guards={guards} />
           </div>

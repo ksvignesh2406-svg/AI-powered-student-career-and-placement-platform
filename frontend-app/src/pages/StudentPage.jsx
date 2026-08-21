@@ -6,16 +6,66 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { clearSession, getSessionUser } from "../utils/authStorage";
+import CampusHeatmap3D from "../components/CampusHeatmap3D";
 import "../styles/student-dashboard.css";
 
 const containerVariants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
 const itemVariants = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } } };
+
+const ROUTE_GRAPH = {
+  "Main Gate": { "Student Center": 8, "Library": 13 },
+  "Student Center": { "Main Gate": 8, Library: 7, "Science Block": 8, "Dorm A": 6 },
+  Library: { "Main Gate": 13, "Student Center": 7, "Science Block": 9 },
+  "Science Block": { "Student Center": 8, Library: 9, "Dorm A": 12, Parking: 10 },
+  "Dorm A": { "Student Center": 6, "Science Block": 12, Parking: 8 },
+  Parking: { "Science Block": 10, "Dorm A": 8 },
+};
+
+const ROUTE_POINTS = {
+  "Main Gate": [0, -15],
+  "Student Center": [0, 2],
+  Library: [4, -3],
+  "Science Block": [6, 5],
+  "Dorm A": [-6, 6],
+  Parking: [15, 10],
+};
+
+const ROUTE_INCIDENTS = [
+  { id: "INC-001", x: -5.5, z: 6.5, intensity: 3.6, type: "Unauthorized Access", location: "Dorm A" },
+  { id: "INC-002", x: 3, z: -2, intensity: 1.8, type: "Motion Sensor", location: "Library" },
+];
+
+function calculateSafeRoute(start, end, incidents) {
+  const distances = Object.fromEntries(Object.keys(ROUTE_GRAPH).map((node) => [node, Infinity]));
+  const previous = {};
+  const queue = [{ node: start, distance: 0 }];
+  distances[start] = 0;
+  while (queue.length) {
+    queue.sort((a, b) => a.distance - b.distance);
+    const current = queue.shift();
+    if (current.node === end) break;
+    Object.entries(ROUTE_GRAPH[current.node] || {}).forEach(([neighbor, baseDistance]) => {
+      const incident = incidents.find((item) => item.location === neighbor && item.active !== false);
+      const nextDistance = current.distance + baseDistance + (incident ? incident.intensity * 50 : 0);
+      if (nextDistance < distances[neighbor]) {
+        distances[neighbor] = nextDistance;
+        previous[neighbor] = current.node;
+        queue.push({ node: neighbor, distance: nextDistance });
+      }
+    });
+  }
+  const path = [];
+  let current = end;
+  while (current) { path.unshift(current); current = previous[current]; }
+  return path.length > 1 && path[0] === start ? path : [];
+}
 
 function StudentPage() {
   const navigate = useNavigate();
   const studentName = getSessionUser()?.name || "Alex";
   const [isSOSActive, setIsSOSActive] = useState(false);
   const [showNightWalk, setShowNightWalk] = useState(false);
+  const [showCampusMap, setShowCampusMap] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const handleLogout = () => { clearSession(); navigate("/"); };
 
@@ -26,11 +76,11 @@ function StudentPage() {
         <div className="student-header-actions"><button className="student-icon-button student-notification" type="button" aria-label="Notifications"><Bell size={24} /><span /></button><button className="student-avatar" type="button" onClick={handleLogout} aria-label="Log out"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex&backgroundColor=f8fafc" alt="User avatar" /></button></div>
       </header>
       <motion.main className="student-main" variants={containerVariants} initial="hidden" animate="show">
-        <section className="student-safety-section"><motion.div variants={itemVariants}><h1>Welcome back, {studentName} <span className="student-wave">👋</span></h1><p>Your campus snapshot for today.</p></motion.div><motion.div variants={itemVariants}><SwipeToSOS isSOSActive={isSOSActive} setIsSOSActive={setIsSOSActive} /></motion.div><motion.div className="student-safety-grid" variants={itemVariants}><button className="student-safety-card night-walk-card" type="button" onClick={() => setShowNightWalk(true)}><span className="student-card-icon"><Moon size={24} /></span><span className="student-card-copy"><strong>Night Walk</strong><small>Start timer</small></span></button><button className="student-safety-card safepath-card" type="button"><span className="student-card-icon"><Map size={24} /></span><span className="student-card-copy"><strong>SafePath</strong><small>Live routing</small></span></button></motion.div></section>
+        <section className="student-safety-section"><motion.div variants={itemVariants}><h1>Welcome back, {studentName} <span className="student-wave">👋</span></h1><p>Your campus snapshot for today.</p></motion.div><motion.div variants={itemVariants}><SwipeToSOS isSOSActive={isSOSActive} setIsSOSActive={setIsSOSActive} /></motion.div><motion.div className="student-safety-grid" variants={itemVariants}><button className="student-safety-card night-walk-card" type="button" onClick={() => setShowNightWalk(true)}><span className="student-card-icon"><Moon size={24} /></span><span className="student-card-copy"><strong>Night Walk</strong><small>Start timer</small></span></button><button className="student-safety-card safepath-card" type="button" onClick={() => setShowCampusMap(true)}><span className="student-card-icon"><Map size={24} /></span><span className="student-card-copy"><strong>SafePath</strong><small>Live routing</small></span></button></motion.div></section>
         <motion.section className="student-snapshot" variants={itemVariants}><h2>Academic Snapshot</h2><div className="student-next-class"><div className="student-next-icon"><BookOpen size={24} /></div><div><h3>Data Structures Lab</h3><p>Starts in 15 mins</p><span><Map size={16} /> Block B, Room 302</span></div></div><div className="student-status-grid"><div className="student-status-card"><span>Attendance</span><div><strong>82%</strong><b className="status-safe">Safe</b></div></div><div className="student-status-card"><span>Pending Fees</span><div><strong>₹0</strong><b className="status-cleared">Cleared</b></div></div></div><PerformanceRadar /></motion.section>
         <motion.section className="student-utilities" variants={itemVariants}><button type="button"><span className="utility-icon issue-icon"><AlertCircle size={24} /></span><span><strong>Report an Issue</strong><small>Maintenance / Safety</small></span><ChevronRight size={20} /></button><button type="button"><span className="utility-icon id-icon"><QrCode size={24} /></span><span><strong>Digital ID</strong><small>Show at Main Gate</small></span><ChevronRight size={20} /></button></motion.section>
       </motion.main>
-      <ChatAssistant studentName={studentName} isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} /><AnimatePresence>{showNightWalk && <NightWalkModal onClose={() => setShowNightWalk(false)} />}</AnimatePresence>
+      <ChatAssistant studentName={studentName} isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} /><AnimatePresence>{showNightWalk && <NightWalkModal onClose={() => setShowNightWalk(false)} />}{showCampusMap && <StudentCampusMapModal onClose={() => setShowCampusMap(false)} />}</AnimatePresence>
     </div></div>
   );
 }
@@ -86,7 +136,15 @@ function ChatAssistant({ studentName, isChatOpen, setIsChatOpen }) {
         answer = data.choices?.[0]?.message?.content || data.message || data.response;
         if (!answer) throw new Error("AI response was empty");
       } else {
-        answer = "Your strongest area is projects at 88%. Try a short exam revision session next; exams are currently your biggest opportunity at 71%.";
+        const normalizedPrompt = prompt.toLowerCase();
+        if (normalizedPrompt.includes("ghost") || normalizedPrompt.includes("timer")) {
+          answer = "There are 2 active night-walk timers. One escort is delayed near the Science Block and security has been notified.";
+        } else if (normalizedPrompt.includes("route") || normalizedPrompt.includes("safepath")) {
+          const route = calculateSafeRoute("Main Gate", "Dorm A", ROUTE_INCIDENTS);
+          answer = `SafePath calculated around active incidents: ${route.join(" -> ")}. Open SafePath to view the route on the map.`;
+        } else {
+          answer = "Your strongest area is projects at 88%. Try a short exam revision session next; exams are currently your biggest opportunity at 71%.";
+        }
       }
       setMessages((current) => [...current, { role: "assistant", text: answer }]);
     } catch {
@@ -103,6 +161,17 @@ function NightWalkModal({ onClose }) {
   const [timeLeft, setTimeLeft] = useState(600); useEffect(() => { const timer = setInterval(() => setTimeLeft((previous) => Math.max(previous - 1, 0)), 1000); return () => clearInterval(timer); }, []);
   const minutes = Math.floor(timeLeft / 60).toString().padStart(2, "0"); const seconds = (timeLeft % 60).toString().padStart(2, "0");
   return <motion.div className="night-walk-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><motion.div className="night-walk-modal" initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }} transition={{ type: "spring", damping: 25, stiffness: 200 }}><div className="modal-handle" /><div className="night-walk-title"><div><Moon size={32} /></div><h2>Night Walk Active</h2><p>We are monitoring your journey. If the timer runs out, Campus Security will be alerted.</p></div><div className="night-walk-timer"><Clock size={24} /><strong>{minutes}:{seconds}</strong></div><div className="security-pin"><label>Security PIN</label><div>{[1, 2, 3, 4].map((number) => <input key={number} type="password" maxLength={1} aria-label={`PIN digit ${number}`} />)}</div></div><button className="end-walk" type="button" onClick={onClose}>End Safe Walk</button><button className="cancel-walk" type="button" onClick={onClose}>Cancel</button></motion.div></motion.div>;
+}
+
+function StudentCampusMapModal({ onClose }) {
+  const [start, setStart] = useState("Main Gate");
+  const [end, setEnd] = useState("Dorm A");
+  const [activeIncidentId, setActiveIncidentId] = useState(null);
+  const route = calculateSafeRoute(start, end, ROUTE_INCIDENTS);
+  const routePath = route.map((node) => ROUTE_POINTS[node]);
+  const selectedIncident = ROUTE_INCIDENTS.find((incident) => incident.id === activeIncidentId);
+
+  return <motion.div className="student-map-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><motion.div className="student-map-modal" initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 24, opacity: 0 }}><div className="student-map-modal-header"><div><span>SafePath / Nexus Routing</span><h2>Live campus map</h2></div><button type="button" onClick={onClose} aria-label="Close campus map"><X size={18} /></button></div><div className="student-map-route-controls"><label>From<select value={start} onChange={(event) => setStart(event.target.value)}>{Object.keys(ROUTE_POINTS).map((node) => <option key={node}>{node}</option>)}</select></label><label>To<select value={end} onChange={(event) => setEnd(event.target.value)}>{Object.keys(ROUTE_POINTS).map((node) => <option key={node}>{node}</option>)}</select></label><div className="student-route-result"><strong>{route.length ? route.join(" -> ") : "No safe route found"}</strong><span>{selectedIncident ? `${selectedIncident.type} selected` : "Route avoids active incident zones"}</span></div></div><div className="student-map-viewport"><CampusHeatmap3D incidents={ROUTE_INCIDENTS} activeIncidentId={activeIncidentId} onIncidentSelect={setActiveIncidentId} routePath={routePath} /></div><div className="student-map-footer"><span><b /> Campus grid online</span><span>{ROUTE_INCIDENTS.length} active safety signals · click a marker for details</span></div></motion.div></motion.div>;
 }
 
 export default StudentPage;
