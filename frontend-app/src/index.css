@@ -1,5 +1,4 @@
 @import "tailwindcss";
-
 * {
   margin: 0;
   padding: 0;
@@ -23,18 +22,65 @@
 
 html {
   scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, .34) transparent;
+  scrollbar-gutter: stable;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
   background: #f4f8f5;
   color: #1e293b;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, .34) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, .34);
+  border: 0 solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, .52);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 button,
 input {
   font: inherit;
+}
+
+@keyframes student-wave {
+  0%, 60%, 100% { transform: rotate(0deg); }
+  10%, 30% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+}
+
+.student-wave {
+  animation: student-wave 2.5s infinite;
+  transform-origin: 70% 70%;
 }
 
 
