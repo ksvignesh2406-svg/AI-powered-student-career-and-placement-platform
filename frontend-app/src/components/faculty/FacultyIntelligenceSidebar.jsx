@@ -1,114 +1,53 @@
-import { ShieldAlert, FileText } from 'lucide-react';
+import { AlertCircle, Check, FileText, X } from "lucide-react";
+
+const atRiskStudents = [
+  { initials: "AK", name: "Aarav Kumar", signal: "Missed 3 consecutive classes" },
+  { initials: "SR", name: "Sneha Roy", signal: "Attendance is at 60%" },
+];
 
 export default function FacultyIntelligenceSidebar({ leaveRequests, onApprove, onReject }) {
-  const handleApprove = (id) => {
-    onApprove(id);
-  };
-
-  const handleReject = (id) => {
-    onReject(id);
-  };
-
   return (
-    <aside className="space-y-6">
-      {/* At-Risk Students */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-1">
-          <span className="font-bold text-base text-slate-900 flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-rose-600" />
-            At-Risk Students
-          </span>
-          <span className="text-[10px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-bold">
-            AI Flagged
-          </span>
+    <aside className="faculty-sidebar">
+      <section className="faculty-panel">
+        <div className="faculty-panel-heading">
+          <div><span className="faculty-section-kicker">Class intelligence</span><h2>At-risk students</h2></div>
+          <AlertCircle size={18} className="faculty-risk-icon" />
         </div>
-        <p className="text-xs text-slate-500 mb-4">Prompting check-in during upcoming lab session.</p>
-
-        <div className="divide-y divide-slate-100">
-          <div className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
-                AK
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-slate-900">Aarav Kumar</h4>
-                <p className="text-xs font-semibold text-rose-600">Missed 3 consecutive classes</p>
-              </div>
+        <p className="faculty-panel-note">AI flags students who need a check-in during lab.</p>
+        <div className="faculty-risk-list">
+          {atRiskStudents.map((student) => (
+            <div className="faculty-risk-item" key={student.name}>
+              <span className="faculty-risk-avatar">{student.initials}</span>
+              <div><strong>{student.name}</strong><span>{student.signal}</span></div>
+              <button type="button" className="faculty-secondary-action">Check in</button>
             </div>
-            <button 
-              onClick={() => alert('Check-in note flagged for Aarav Kumar during lab.')}
-              className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
-            >
-              Check-in
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
-                SR
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-slate-900">Sneha Roy</h4>
-                <p className="text-xs font-semibold text-rose-600">Attendance below 65%</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => alert('Check-in note flagged for Sneha Roy during lab.')}
-              className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
-            >
-              Check-in
-            </button>
-          </div>
+          ))}
         </div>
-      </div>
+      </section>
 
-      {/* Leave Approval Queue */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <span className="font-bold text-base text-slate-900 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-[#00875a]" />
-            Leave Approval Queue
-          </span>
+      <section className="faculty-panel">
+        <div className="faculty-panel-heading">
+          <div><span className="faculty-section-kicker">Academic workflow</span><h2>Leave approvals</h2></div>
+          <span className="faculty-count-badge">{leaveRequests.length}</span>
         </div>
-
-        <div className="space-y-3">
-          {leaveRequests.length === 0 ? (
-            <p className="text-xs text-slate-400 text-center py-4">No pending requests.</p>
-          ) : (
-            leaveRequests.map(req => (
-              <div key={req.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="flex justify-between items-center text-xs font-bold mb-1">
-                  <span>{req.studentName} ({req.course})</span>
-                  <span className="text-slate-500 text-[11px] font-normal">{req.type}</span>
+        <div className="faculty-leave-list">
+          {leaveRequests.map((request) => (
+            <article className="faculty-leave-item" key={request.id}>
+              <div className="faculty-leave-meta"><strong>{request.studentName}</strong><span>{request.course} · {request.type}</span></div>
+              <p>{request.details}</p>
+              {request.status === "approved" ? (
+                <div className="faculty-approved"><Check size={15} /> Approved</div>
+              ) : (
+                <div className="faculty-action-row">
+                  <button type="button" className="faculty-primary-action" onClick={() => onApprove(request.id)}><Check size={15} /> Approve</button>
+                  <button type="button" className="faculty-danger-action" onClick={() => onReject(request.id)}><X size={15} /> Reject</button>
                 </div>
-                <div className="text-xs text-slate-500 mb-3">{req.details}</div>
-                
-                {req.status === 'approved' ? (
-                  <div className="w-full bg-emerald-600 text-white text-center py-1.5 rounded-lg text-xs font-semibold">
-                    Approved
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleApprove(req.id)}
-                      className="flex-1 bg-[#00875a] hover:bg-[#006c48] text-white py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                    >
-                      Approve
-                    </button>
-                    <button 
-                      onClick={() => handleReject(req.id)}
-                      className="flex-1 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
+              )}
+            </article>
+          ))}
+          {leaveRequests.length === 0 && <p className="faculty-empty-state"><FileText size={18} /> No pending requests.</p>}
         </div>
-      </div>
+      </section>
     </aside>
   );
 }

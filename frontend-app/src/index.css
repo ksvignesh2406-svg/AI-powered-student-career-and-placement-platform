@@ -1804,6 +1804,13 @@ input {
   transform: none;
 }
 
+.campus-form-error {
+  margin-top: 10px;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .campus-spinner {
   width: 18px;
   height: 18px;

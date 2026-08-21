@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -12,6 +12,7 @@ import {
   User,
   Users,
 } from "lucide-react";
+import { registerUser, signInUser } from "../utils/authStorage";
 
 const roles = [
   {
@@ -56,24 +57,11 @@ const roles = [
   },
 ];
 
-const departments = [
-  "Computer Science Dept.",
-  "Information Technology Dept.",
-  "Electronics & Communication Dept.",
-  "Mechanical Engineering Dept.",
-];
-
 function BrandMark({ compact = false }) {
   return (
     <div className={compact ? "campus-mobile-brand" : "campus-auth-brand"}>
       <div className="campus-brand-icon">
         <Sparkles size={24} strokeWidth={2.5} />
-  const departments = [
-    "Computer Science Dept.",
-    "Information Technology Dept.",
-    "Electronics & Communication Dept.",
-    "Mechanical Engineering Dept.",
-  ];
       </div>
 
       <span>
@@ -212,22 +200,6 @@ function Field({
   );
 }
 
-function DepartmentField({ value, onChange }) {
-  return (
-    <div className="campus-field">
-      <label htmlFor="department">Department</label>
-      <div className="campus-input-wrap campus-select-wrap">
-        <GraduationCap size={18} />
-        <select id="department" name="department" value={value} onChange={onChange} required>
-          {departments.map((department) => (
-            <option key={department} value={department}>{department}</option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
-}
-
 function AuthForm({
   activeRole,
   isLogin,
@@ -235,6 +207,7 @@ function AuthForm({
   form,
   onChange,
   onSubmit,
+  error,
 }) {
   const emailLabel =
     activeRole === "student"
@@ -251,7 +224,7 @@ function AuthForm({
       onSubmit={onSubmit}
       className="campus-auth-form"
     >
-      {(!isLogin || activeRole === "student" || activeRole === "faculty") && (
+      {!isLogin && (
         <Field
           icon={User}
           label="Full Name"
@@ -262,8 +235,15 @@ function AuthForm({
         />
       )}
 
-      {(activeRole === "student" || activeRole === "faculty") && (
-        <DepartmentField value={form.department} onChange={onChange} />
+      {!isLogin && activeRole === "faculty" && (
+        <Field
+          icon={Briefcase}
+          label="Department"
+          name="department"
+          placeholder="e.g. Computer Science"
+          value={form.department}
+          onChange={onChange}
+        />
       )}
 
       <Field
@@ -317,6 +297,8 @@ function AuthForm({
           </>
         )}
       </button>
+
+      {error && <p className="campus-form-error">{error}</p>}
     </form>
   );
 }
@@ -326,22 +308,19 @@ function CampusOSAuth() {
   const [isLogin, setIsLogin] = useState(true);
   const [activeRole, setActiveRole] = useState("student");
   const [isLoading, setIsLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
-    department: departments[0],
+    department: "",
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const currentRole =
     roles.find((role) => role.id === activeRole) || roles[0];
 
   const handleChange = (event) => {
+    setError("");
     setForm({
       ...form,
       [event.target.name]: event.target.value,
@@ -353,26 +332,22 @@ function CampusOSAuth() {
     setIsLoading(true);
 
     window.setTimeout(() => {
-      const fallbackName = form.email.split("@")[0].replace(/[._-]+/g, " ");
-      const profile = {
-        name: form.name.trim() || fallbackName || "Campus User",
-        email: form.email.trim(),
-        role: activeRole,
-        department: form.department,
-      };
-
-      window.localStorage.setItem("campusUser", JSON.stringify(profile));
-
-      if (activeRole === "student") {
-        const savedStudents = JSON.parse(window.localStorage.getItem("campusStudents") || "[]");
-        const students = [
-          ...savedStudents.filter((student) => student.email !== profile.email),
-          profile,
-        ];
-        window.localStorage.setItem("campusStudents", JSON.stringify(students));
-      }
+      const result = isLogin
+        ? signInUser(activeRole, form.email.trim(), form.password)
+        : registerUser({
+            role: activeRole,
+            name: form.name.trim(),
+            email: form.email.trim(),
+            password: form.password,
+            department: form.department.trim(),
+          });
 
       setIsLoading(false);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
       navigate(`/${activeRole}`);
     }, 700);
   };
@@ -380,9 +355,7 @@ function CampusOSAuth() {
   return (
     <main className="campus-auth-page">
       <section
-        className={`campus-auth-shell ${
-          mounted ? "mounted" : ""
-        }`}
+        className="campus-auth-shell mounted"
       >
         <ShowcasePanel role={currentRole} />
 
@@ -419,6 +392,7 @@ function CampusOSAuth() {
               form={form}
               onChange={handleChange}
               onSubmit={handleSubmit}
+              error={error}
             />
 
             <p className="campus-terms">
