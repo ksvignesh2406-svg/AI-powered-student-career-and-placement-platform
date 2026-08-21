@@ -5,7 +5,6 @@ import {
   MessageSquare, Moon, QrCode, Send, Shield, ShieldAlert, X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { clearSession, getSessionUser } from "../utils/authStorage";
 import "../styles/student-dashboard.css";
 
 const containerVariants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
@@ -13,11 +12,11 @@ const itemVariants = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, 
 
 function StudentPage() {
   const navigate = useNavigate();
-  const studentName = getSessionUser()?.name || "Alex";
+  const studentName = "Alex";
   const [isSOSActive, setIsSOSActive] = useState(false);
   const [showNightWalk, setShowNightWalk] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const handleLogout = () => { clearSession(); navigate("/"); };
+  const handleLogout = () => { navigate("/"); };
 
   return (
     <div className="student-app"><div className="student-shell">
