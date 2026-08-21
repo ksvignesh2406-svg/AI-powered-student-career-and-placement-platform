@@ -4,8 +4,6 @@ import FacultyClassConsole from "../components/faculty/FacultyClassConsole";
 import FacultyHeader from "../components/faculty/FacultyHeader";
 import FacultyIntelligenceSidebar from "../components/faculty/FacultyIntelligenceSidebar";
 
-import "../styles/faculty-dashboard.css";
-
 const initialLeaveRequests = [
   {
     id: 1,
@@ -25,60 +23,35 @@ const initialLeaveRequests = [
   },
 ];
 
-const defaultProfile = {
-  name: "Prof. Sharma",
-  department: "Computer Science Dept.",
-};
-
-function readProfile() {
-  try {
-    return JSON.parse(window.localStorage.getItem("campusUser")) || defaultProfile;
-  } catch {
-    return defaultProfile;
-  }
-}
-
-function readDepartmentStudents(department) {
-  try {
-    const students = JSON.parse(window.localStorage.getItem("campusStudents") || "[]");
-    return students
-      .filter((student) => student.department === department)
-      .map((student) => ({
-        name: student.name,
-        initials: student.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
-        reason: "New student profile",
-      }));
-  } catch {
-    return [];
-  }
-}
-
 function FacultyPage() {
-  const profile = readProfile();
-  const professorName = profile.name || defaultProfile.name;
-  const department = profile.department || defaultProfile.department;
   const [leaveRequests, setLeaveRequests] = useState(initialLeaveRequests);
 
   const handleApprove = (requestId) => {
-    setLeaveRequests((requests) => requests.map((request) => (
-      request.id === requestId ? { ...request, status: "approved" } : request
-    )));
+    setLeaveRequests((requests) =>
+      requests.map((request) =>
+        request.id === requestId ? { ...request, status: "approved" } : request
+      )
+    );
   };
 
   const handleReject = (requestId) => {
-    setLeaveRequests((requests) => requests.filter((request) => request.id !== requestId));
+    setLeaveRequests((requests) =>
+      requests.filter((request) => request.id !== requestId)
+    );
   };
 
   return (
-    <div className="faculty-v2-dashboard">
-      <div className="faculty-v2-shell">
-        <FacultyHeader professorName={professorName} department={department} />
-        <FacultyBanner pendingLeaves={leaveRequests.length} professorName={professorName} />
-        <main className="faculty-v2-content">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-100 via-green-100 to-teal-100 p-6 flex justify-center items-center text-slate-900 font-sans">
+      <div className="w-full max-w-7xl bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/80 overflow-hidden flex flex-col">
+        
+        <FacultyHeader />
+        <FacultyBanner pendingLeaves={leaveRequests.length} />
+
+        {/* Dashboard Content Grid */}
+        <main className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 p-8">
           <FacultyClassConsole />
-          <FacultyIntelligenceSidebar
+          <FacultyIntelligenceSidebar 
             leaveRequests={leaveRequests}
-            students={readDepartmentStudents(department)}
             onApprove={handleApprove}
             onReject={handleReject}
           />
