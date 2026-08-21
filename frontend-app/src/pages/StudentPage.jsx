@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useAnimation } from "framer-motion";
 import {
   AlertCircle, ArrowRight, Bell, BookOpen, ChevronRight, Clock, Map,
-  MessageSquare, Moon, QrCode, Send, Shield, ShieldAlert, X,
+  MessageSquare, Moon, QrCode, Send, Shield, ShieldAlert, Sparkles, X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { clearSession, getSessionUser } from "../utils/authStorage";
@@ -27,12 +27,34 @@ function StudentPage() {
       </header>
       <motion.main className="student-main" variants={containerVariants} initial="hidden" animate="show">
         <section className="student-safety-section"><motion.div variants={itemVariants}><h1>Welcome back, {studentName} <span className="student-wave">👋</span></h1><p>Your campus snapshot for today.</p></motion.div><motion.div variants={itemVariants}><SwipeToSOS isSOSActive={isSOSActive} setIsSOSActive={setIsSOSActive} /></motion.div><motion.div className="student-safety-grid" variants={itemVariants}><button className="student-safety-card night-walk-card" type="button" onClick={() => setShowNightWalk(true)}><span className="student-card-icon"><Moon size={24} /></span><span className="student-card-copy"><strong>Night Walk</strong><small>Start timer</small></span></button><button className="student-safety-card safepath-card" type="button"><span className="student-card-icon"><Map size={24} /></span><span className="student-card-copy"><strong>SafePath</strong><small>Live routing</small></span></button></motion.div></section>
-        <motion.section className="student-snapshot" variants={itemVariants}><h2>Academic Snapshot</h2><div className="student-next-class"><div className="student-next-icon"><BookOpen size={24} /></div><div><h3>Data Structures Lab</h3><p>Starts in 15 mins</p><span><Map size={16} /> Block B, Room 302</span></div></div><div className="student-status-grid"><div className="student-status-card"><span>Attendance</span><div><strong>82%</strong><b className="status-safe">Safe</b></div></div><div className="student-status-card"><span>Pending Fees</span><div><strong>₹0</strong><b className="status-cleared">Cleared</b></div></div></div></motion.section>
+        <motion.section className="student-snapshot" variants={itemVariants}><h2>Academic Snapshot</h2><div className="student-next-class"><div className="student-next-icon"><BookOpen size={24} /></div><div><h3>Data Structures Lab</h3><p>Starts in 15 mins</p><span><Map size={16} /> Block B, Room 302</span></div></div><div className="student-status-grid"><div className="student-status-card"><span>Attendance</span><div><strong>82%</strong><b className="status-safe">Safe</b></div></div><div className="student-status-card"><span>Pending Fees</span><div><strong>₹0</strong><b className="status-cleared">Cleared</b></div></div></div><PerformanceRadar /></motion.section>
         <motion.section className="student-utilities" variants={itemVariants}><button type="button"><span className="utility-icon issue-icon"><AlertCircle size={24} /></span><span><strong>Report an Issue</strong><small>Maintenance / Safety</small></span><ChevronRight size={20} /></button><button type="button"><span className="utility-icon id-icon"><QrCode size={24} /></span><span><strong>Digital ID</strong><small>Show at Main Gate</small></span><ChevronRight size={20} /></button></motion.section>
       </motion.main>
-      <ChatAssistant isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} /><AnimatePresence>{showNightWalk && <NightWalkModal onClose={() => setShowNightWalk(false)} />}</AnimatePresence>
+      <ChatAssistant studentName={studentName} isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} /><AnimatePresence>{showNightWalk && <NightWalkModal onClose={() => setShowNightWalk(false)} />}</AnimatePresence>
     </div></div>
   );
+}
+
+const performanceMetrics = [
+  { label: "Attendance", value: 82 },
+  { label: "Assignments", value: 76 },
+  { label: "Projects", value: 88 },
+  { label: "Exams", value: 71 },
+  { label: "Participation", value: 64 },
+];
+
+function PerformanceRadar() {
+  const center = 110;
+  const radius = 76;
+  const point = (index, value) => {
+    const angle = (Math.PI * 2 * index) / performanceMetrics.length - Math.PI / 2;
+    const distance = radius * (value / 100);
+    return `${center + Math.cos(angle) * distance},${center + Math.sin(angle) * distance}`;
+  };
+  const outline = performanceMetrics.map((_, index) => point(index, 100)).join(" ");
+  const values = performanceMetrics.map((metric, index) => point(index, metric.value)).join(" ");
+
+  return <div className="student-performance"><div className="student-performance-heading"><div><span>Performance map</span><strong>Term progress</strong></div><Sparkles size={18} /></div><div className="student-radar-wrap"><svg className="student-radar" viewBox="0 0 220 220" role="img" aria-label="Radar chart of academic performance"><polygon points={outline} className="radar-outline" />{[25, 50, 75].map((scale) => <polygon key={scale} points={performanceMetrics.map((_, index) => point(index, scale)).join(" ")} className="radar-grid" />)}{performanceMetrics.map((_, index) => <line key={index} x1={center} y1={center} x2={point(index, 100).split(",")[0]} y2={point(index, 100).split(",")[1]} className="radar-axis" />)}<polygon points={values} className="radar-value" />{performanceMetrics.map((metric, index) => { const [x, y] = point(index, 100).split(","); return <text key={metric.label} x={x} y={y} className="radar-label" textAnchor="middle" dominantBaseline="middle">{metric.label}</text>; })}</svg></div><div className="student-performance-legend">{performanceMetrics.map((metric) => <span key={metric.label}><b>{metric.value}</b>{metric.label}</span>)}</div></div>;
 }
 
 function SwipeToSOS({ isSOSActive, setIsSOSActive }) {
@@ -42,8 +64,39 @@ function SwipeToSOS({ isSOSActive, setIsSOSActive }) {
   return <div ref={containerRef} className="sos-track"><span className={isDragging ? "is-dragging" : ""}>SWIPE TO SOS</span><motion.div drag="x" dragConstraints={containerRef} dragElastic={0.05} dragMomentum={false} onDragStart={() => setIsDragging(true)} onDragEnd={handleDragEnd} animate={dragControls} whileTap={{ scale: 0.95 }} className="sos-handle"><ArrowRight size={28} /></motion.div></div>;
 }
 
-function ChatAssistant({ isChatOpen, setIsChatOpen }) {
-  return <div className="student-chat-wrap"><AnimatePresence>{isChatOpen && <motion.div className="student-chat" initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}><div className="student-chat-header"><span><MessageSquare size={20} /> Campus Assistant AI</span><button type="button" onClick={() => setIsChatOpen(false)} aria-label="Close chat"><X size={16} /></button></div><div className="student-chat-body"><p>Hi Alex! 👋 I noticed you have Data Structures in 15 mins at Block B. Need the fastest route avoiding the ongoing construction near the library?</p></div><div className="student-chat-input"><input type="text" placeholder="Ask anything..." /><button type="button" aria-label="Send message"><Send size={16} /></button></div></motion.div>}</AnimatePresence><button className="student-chat-button" type="button" onClick={() => setIsChatOpen(!isChatOpen)} aria-label={isChatOpen ? "Close chat" : "Open chat"}>{isChatOpen ? <X size={24} /> : <MessageSquare size={24} />}</button></div>;
+function ChatAssistant({ studentName, isChatOpen, setIsChatOpen }) {
+  const [question, setQuestion] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState([{ role: "assistant", text: `Hi ${studentName}! I can help with your classes, performance, campus safety, or the fastest route to your next class.` }]);
+
+  const sendMessage = async (event) => {
+    event?.preventDefault();
+    const prompt = question.trim();
+    if (!prompt || isLoading) return;
+    setQuestion("");
+    setMessages((current) => [...current, { role: "user", text: prompt }]);
+    setIsLoading(true);
+    const apiUrl = import.meta.env.VITE_AI_API_URL;
+    try {
+      let answer;
+      if (apiUrl) {
+        const response = await fetch(apiUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: [{ role: "system", content: "You are Campus Assistant AI. Be concise, supportive, and use this student context: attendance 82%, assignments 76%, projects 88%, exams 71%, participation 64%.", }, ...messages.map((message) => ({ role: message.role, content: message.text })), { role: "user", content: prompt }] }) });
+        if (!response.ok) throw new Error("AI request failed");
+        const data = await response.json();
+        answer = data.choices?.[0]?.message?.content || data.message || data.response;
+        if (!answer) throw new Error("AI response was empty");
+      } else {
+        answer = "Your strongest area is projects at 88%. Try a short exam revision session next; exams are currently your biggest opportunity at 71%.";
+      }
+      setMessages((current) => [...current, { role: "assistant", text: answer }]);
+    } catch {
+      setMessages((current) => [...current, { role: "assistant", text: "I could not reach the AI service right now. Please try again in a moment." }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return <div className="student-chat-wrap"><AnimatePresence>{isChatOpen && <motion.div className="student-chat" initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}><div className="student-chat-header"><span><MessageSquare size={20} /> Campus Assistant AI</span><button type="button" onClick={() => setIsChatOpen(false)} aria-label="Close chat"><X size={16} /></button></div><div className="student-chat-body">{messages.map((message, index) => <p className={message.role === "user" ? "student-chat-message-user" : ""} key={`${message.role}-${index}`}>{message.text}</p>)}{isLoading && <p className="student-chat-loading">Thinking...</p>}</div><form className="student-chat-input" onSubmit={sendMessage}><input value={question} onChange={(event) => setQuestion(event.target.value)} type="text" placeholder="Ask anything..." aria-label="Ask Campus Assistant AI" /><button type="submit" aria-label="Send message" disabled={isLoading}><Send size={16} /></button></form></motion.div>}</AnimatePresence><button className="student-chat-button" type="button" onClick={() => setIsChatOpen(!isChatOpen)} aria-label={isChatOpen ? "Close chat" : "Open chat"}>{isChatOpen ? <X size={24} /> : <MessageSquare size={24} />}</button></div>;
 }
 
 function NightWalkModal({ onClose }) {

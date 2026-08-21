@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 * {
   margin: 0;
@@ -16,8 +14,8 @@
     "Segoe UI",
     sans-serif;
 
-  color: #e9f0f7;
-  background: #06111d;
+  color: #1e293b;
+  background: #f4f8f5;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -30,7 +28,8 @@ html {
 body {
   min-width: 320px;
   min-height: 100vh;
-  background: #06111d;
+  background: #f4f8f5;
+  color: #1e293b;
 }
 
 button,

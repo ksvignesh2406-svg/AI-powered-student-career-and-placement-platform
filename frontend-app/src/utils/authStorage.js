@@ -9,6 +9,42 @@ function readUsers() {
   }
 }
 
+export function getUsers() {
+  return readUsers();
+}
+
+export function addUser(user) {
+  const users = readUsers();
+  const email = user.email.trim().toLowerCase();
+  if (users.some((candidate) => candidate.email.toLowerCase() === email)) {
+    return { error: "An account already exists for this email." };
+  }
+
+  const savedUser = {
+    ...user,
+    email,
+    id: `${user.role}-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    status: "active",
+  };
+  window.localStorage.setItem(USERS_KEY, JSON.stringify([...users, savedUser]));
+  return { user: savedUser };
+}
+
+export function updateUser(userId, changes) {
+  const users = readUsers();
+  const updatedUsers = users.map((user) => user.id === userId ? { ...user, ...changes } : user);
+  window.localStorage.setItem(USERS_KEY, JSON.stringify(updatedUsers));
+  return updatedUsers.find((user) => user.id === userId) || null;
+}
+
+export function removeUser(userId) {
+  const users = readUsers();
+  const removedUser = users.find((user) => user.id === userId) || null;
+  window.localStorage.setItem(USERS_KEY, JSON.stringify(users.filter((user) => user.id !== userId)));
+  return removedUser;
+}
+
 export function registerUser(user) {
   const users = readUsers();
   const existingUser = users.find(
