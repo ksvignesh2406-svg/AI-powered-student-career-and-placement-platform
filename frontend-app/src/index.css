@@ -1,0 +1,1866 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  color: #e9f0f7;
+  background: #06111d;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  background: #06111d;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+
+/* =====================================================
+   PORTAL
+===================================================== */
+
+.portal {
+  min-height: 100vh;
+
+  background:
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(24, 106, 181, 0.08),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 90% 70%,
+      rgba(109, 54, 177, 0.07),
+      transparent 28%
+    ),
+    #06111d;
+}
+
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.portal-header {
+  min-height: 76px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 5%;
+
+  border-bottom:
+    1px solid rgba(255,255,255,0.08);
+
+  background:
+    rgba(5, 16, 28, 0.94);
+
+  position: sticky;
+  top: 0;
+
+  z-index: 20;
+
+  backdrop-filter: blur(14px);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+.brand-logo {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #208de0,
+      #124b79
+    );
+
+  color: white;
+
+  box-shadow:
+    0 7px 20px
+    rgba(26,130,210,0.18);
+}
+
+.brand-name {
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.4px;
+}
+
+.brand-subtitle {
+  margin-top: 2px;
+
+  color: #6c8293;
+
+  font-size: 8px;
+  font-weight: 700;
+
+  letter-spacing: 1.3px;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  color: #7f93a3;
+
+  font-size: 10px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #45b67c;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(69,182,124,0.08);
+}
+
+
+/* =====================================================
+   HERO
+===================================================== */
+
+.portal-hero {
+  padding:
+    72px 5% 60px;
+
+  border-bottom:
+    1px solid rgba(255,255,255,0.06);
+
+  background:
+    linear-gradient(
+      120deg,
+      rgba(13,45,74,0.46),
+      rgba(6,17,29,0)
+    );
+}
+
+.hero-content {
+  max-width: 1000px;
+  margin: auto;
+}
+
+.hero-label {
+  color: #51aeee;
+
+  font-size: 9px;
+  font-weight: 750;
+
+  letter-spacing: 1.8px;
+}
+
+.hero-content h1 {
+  margin-top: 17px;
+
+  color: #f2f6fa;
+
+  font-size:
+    clamp(38px, 5vw, 64px);
+
+  line-height: 1.03;
+
+  letter-spacing: -2px;
+
+  font-weight: 750;
+}
+
+.hero-content h1 span {
+  color: #42aef0;
+}
+
+.hero-content p {
+  max-width: 600px;
+
+  margin-top: 20px;
+
+  color: #8ea0ad;
+
+  font-size: 14px;
+
+  line-height: 1.75;
+}
+
+
+/* =====================================================
+   ROLES
+===================================================== */
+
+.roles-section {
+  max-width: 1400px;
+
+  margin: auto;
+
+  padding:
+    50px 5%;
+}
+
+.section-title {
+  display: flex;
+
+  align-items: end;
+
+  justify-content: space-between;
+
+  margin-bottom: 25px;
+}
+
+.section-title > div > span {
+  color: #4ba9e8;
+
+  font-size: 9px;
+
+  font-weight: 750;
+
+  letter-spacing: 1.4px;
+}
+
+.section-title h2 {
+  margin-top: 6px;
+
+  color: #edf3f8;
+
+  font-size: 25px;
+
+  letter-spacing: -0.6px;
+}
+
+.section-title > p {
+  color: #667b8b;
+
+  font-size: 10px;
+}
+
+
+/* =====================================================
+   ROLE GRID
+===================================================== */
+
+.role-grid-main {
+  display: grid;
+
+  grid-template-columns:
+    repeat(6, 1fr);
+
+  gap: 12px;
+}
+
+
+.portal-role-card {
+  min-height: 210px;
+
+  position: relative;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: space-between;
+
+  padding: 20px;
+
+  text-align: left;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(18,36,53,0.95),
+      rgba(8,24,38,0.95)
+    );
+
+  border:
+    1px solid rgba(255,255,255,0.08);
+
+  border-top:
+    2px solid transparent;
+
+  border-radius: 12px;
+
+  cursor: pointer;
+
+  overflow: hidden;
+
+  transition:
+    transform 0.28s ease,
+    border-color 0.28s ease,
+    box-shadow 0.28s ease,
+    background 0.28s ease;
+}
+
+.portal-role-card::after {
+  content: "";
+
+  position: absolute;
+
+  width: 140px;
+  height: 140px;
+
+  right: -70px;
+  bottom: -80px;
+
+  border-radius: 50%;
+
+  background: currentColor;
+
+  opacity: 0.035;
+
+  transition:
+    transform 0.3s ease;
+}
+
+.portal-role-card:hover {
+  transform:
+    translateY(-7px);
+
+  box-shadow:
+    0 18px 35px
+    rgba(0,0,0,0.25);
+}
+
+.portal-role-card:hover::after {
+  transform: scale(1.4);
+}
+
+
+/* card colors */
+
+.portal-role-card.blue {
+  border-top-color: #2496df;
+}
+
+.portal-role-card.green {
+  border-top-color: #39ad80;
+}
+
+.portal-role-card.purple {
+  border-top-color: #8a68dc;
+}
+
+.portal-role-card.orange {
+  border-top-color: #e29b49;
+}
+
+.portal-role-card.pink {
+  border-top-color: #d85d9a;
+}
+
+.portal-role-card.red {
+  border-top-color: #e75c62;
+}
+
+
+.role-card-top {
+  display: flex;
+
+  justify-content: space-between;
+}
+
+.portal-role-icon {
+  width: 53px;
+  height: 53px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background:
+    rgba(255,255,255,0.06);
+
+  transition:
+    transform 0.28s ease,
+    background 0.28s ease;
+}
+
+.portal-role-card:hover .portal-role-icon {
+  transform:
+    scale(1.08)
+    rotate(-3deg);
+}
+
+.portal-role-card.blue .portal-role-icon {
+  color: #49aef2;
+}
+
+.portal-role-card.green .portal-role-icon {
+  color: #4dcc98;
+}
+
+.portal-role-card.purple .portal-role-icon {
+  color: #a07cf1;
+}
+
+.portal-role-card.orange .portal-role-icon {
+  color: #efa952;
+}
+
+.portal-role-card.pink .portal-role-icon {
+  color: #e875ad;
+}
+
+.portal-role-card.red .portal-role-icon {
+  color: #ef6d73;
+}
+
+.role-arrow {
+  color: #566d7d;
+
+  transition:
+    transform 0.25s ease,
+    color 0.25s ease;
+}
+
+.portal-role-card:hover .role-arrow {
+  transform:
+    translateX(4px);
+
+  color: #c7d7e3;
+}
+
+.portal-role-content {
+  margin-top: 20px;
+}
+
+.portal-role-content h3 {
+  font-size: 17px;
+
+  font-weight: 700;
+}
+
+.portal-role-content p {
+  margin-top: 7px;
+
+  color: #738898;
+
+  font-size: 10px;
+
+  line-height: 1.5;
+}
+
+.enter-label {
+  margin-top: 18px;
+
+  color: #5e7586;
+
+  font-size: 7px;
+
+  font-weight: 750;
+
+  letter-spacing: 1.1px;
+}
+
+
+/* =====================================================
+   UPDATES
+===================================================== */
+
+.updates-section,
+.services-section {
+  max-width: 1400px;
+
+  margin: auto;
+
+  padding:
+    0 5% 50px;
+}
+
+.updates-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  padding-bottom: 16px;
+
+  border-bottom:
+    1px solid rgba(255,255,255,0.07);
+}
+
+.updates-title {
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+}
+
+.updates-title > svg {
+  color: #3e9dde;
+}
+
+.updates-title span {
+  color: #4ba9e8;
+
+  font-size: 8px;
+
+  font-weight: 750;
+
+  letter-spacing: 1.3px;
+}
+
+.updates-title h2 {
+  margin-top: 3px;
+
+  color: #eaf0f4;
+
+  font-size: 21px;
+}
+
+.updates-header > button {
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  color: #4ca8df;
+
+  border: none;
+
+  background: transparent;
+
+  font-size: 10px;
+
+  cursor: pointer;
+}
+
+
+/* =====================================================
+   UPDATES GRID
+===================================================== */
+
+.updates-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 10px;
+
+  margin-top: 16px;
+}
+
+.update-card {
+  display: flex;
+
+  gap: 11px;
+
+  padding: 17px;
+
+  border:
+    1px solid rgba(255,255,255,0.07);
+
+  border-radius: 9px;
+
+  background:
+    rgba(255,255,255,0.025);
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.update-card:hover {
+  transform: translateY(-3px);
+
+  background:
+    rgba(255,255,255,0.045);
+}
+
+.update-icon {
+  width: 31px;
+  height: 31px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  color: #3ea9e8;
+
+  border-radius: 7px;
+
+  background:
+    rgba(56,160,220,0.09);
+}
+
+.update-card h4 {
+  color: #dbe5eb;
+
+  font-size: 11px;
+}
+
+.update-card p {
+  margin-top: 5px;
+
+  color: #687c8a;
+
+  font-size: 9px;
+
+  line-height: 1.5;
+}
+
+
+/* =====================================================
+   SERVICES
+===================================================== */
+
+.services-section {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  gap: 12px;
+
+  padding-top: 4px;
+}
+
+.service {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 13px;
+
+  padding: 22px;
+
+  border:
+    1px solid rgba(255,255,255,0.07);
+
+  border-radius: 10px;
+
+  background:
+    rgba(255,255,255,0.02);
+}
+
+.service-icon {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  color: #48a9e6;
+
+  border-radius: 8px;
+
+  background:
+    rgba(54,158,216,0.08);
+}
+
+.service span {
+  color: #4ba9e8;
+
+  font-size: 7px;
+
+  font-weight: 750;
+
+  letter-spacing: 1px;
+}
+
+.service h3 {
+  margin-top: 5px;
+
+  color: #dce5ea;
+
+  font-size: 12px;
+}
+
+.service p {
+  margin-top: 5px;
+
+  color: #687c88;
+
+  font-size: 9px;
+
+  line-height: 1.5;
+}
+
+
+/* =====================================================
+   FOOTER
+===================================================== */
+
+.portal-footer {
+  min-height: 70px;
+
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr 1fr;
+
+  align-items: center;
+
+  padding:
+    0 5%;
+
+  border-top:
+    1px solid rgba(255,255,255,0.07);
+
+  background:
+    #040d16;
+
+  color: #536b7a;
+
+  font-size: 9px;
+}
+
+.portal-footer strong {
+  display: block;
+
+  color: #9eb0bc;
+
+  font-size: 10px;
+}
+
+.portal-footer span {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #586e7b;
+}
+
+.footer-center {
+  text-align: center;
+}
+
+
+/* =====================================================
+   LOGIN VIEW
+===================================================== */
+
+.login-view {
+  max-width: 1150px;
+
+  min-height:
+    calc(100vh - 76px);
+
+  margin: auto;
+
+  padding:
+    60px 5%;
+}
+
+.back-button {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  margin-bottom: 40px;
+
+  color: #7990a0;
+
+  border: none;
+
+  background: transparent;
+
+  font-size: 10px;
+
+  cursor: pointer;
+}
+
+.back-button:hover {
+  color: #53aee7;
+}
+
+
+/* =====================================================
+   AUTH LAYOUT
+===================================================== */
+
+.auth-layout {
+  display: grid;
+
+  grid-template-columns:
+    1fr 460px;
+
+  gap: 80px;
+
+  align-items: center;
+}
+
+.auth-intro {
+  max-width: 500px;
+}
+
+.auth-role-icon {
+  width: 72px;
+  height: 72px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 25px;
+
+  border-radius: 16px;
+
+  background:
+    rgba(255,255,255,0.05);
+}
+
+.auth-role-icon.blue {
+  color: #49aef2;
+}
+
+.auth-role-icon.green {
+  color: #4dcc98;
+}
+
+.auth-role-icon.purple {
+  color: #a07cf1;
+}
+
+.auth-role-icon.orange {
+  color: #efa952;
+}
+
+.auth-role-icon.pink {
+  color: #e875ad;
+}
+
+.auth-role-icon.red {
+  color: #ef6d73;
+}
+
+.auth-label {
+  color: #4da9e3;
+
+  font-size: 9px;
+
+  font-weight: 750;
+
+  letter-spacing: 1.4px;
+}
+
+.auth-intro h1 {
+  margin-top: 13px;
+
+  color: #edf4f8;
+
+  font-size:
+    clamp(42px, 5vw, 62px);
+
+  line-height: 1.02;
+
+  letter-spacing: -2px;
+}
+
+.auth-intro p {
+  max-width: 430px;
+
+  margin-top: 20px;
+
+  color: #7d929f;
+
+  font-size: 13px;
+
+  line-height: 1.75;
+}
+
+.auth-points {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 11px;
+
+  margin-top: 30px;
+
+  color: #8095a3;
+
+  font-size: 10px;
+}
+
+.auth-points div {
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+}
+
+.auth-points svg {
+  color: #47a8df;
+}
+
+
+/* =====================================================
+   AUTH CARD
+===================================================== */
+
+.auth-card {
+  padding: 30px;
+
+  border:
+    1px solid rgba(255,255,255,0.10);
+
+  border-radius: 14px;
+
+  background:
+    rgba(14,30,44,0.84);
+
+  backdrop-filter: blur(18px);
+
+  box-shadow:
+    0 25px 70px
+    rgba(0,0,0,0.35);
+}
+
+.auth-tabs {
+  display: flex;
+
+  padding: 3px;
+
+  border:
+    1px solid rgba(255,255,255,0.07);
+
+  border-radius: 7px;
+
+  background:
+    rgba(255,255,255,0.025);
+
+  margin-bottom: 25px;
+}
+
+.auth-tabs button {
+  flex: 1;
+
+  padding: 8px;
+
+  color: #718594;
+
+  border: none;
+
+  border-radius: 5px;
+
+  background: transparent;
+
+  font-size: 10px;
+
+  cursor: pointer;
+}
+
+.auth-tabs button.active {
+  color: #edf6fb;
+
+  background:
+    rgba(255,255,255,0.07);
+}
+
+.auth-heading h2 {
+  color: #edf4f8;
+
+  font-size: 22px;
+}
+
+.auth-heading p {
+  margin-top: 7px;
+
+  color: #758895;
+
+  font-size: 10px;
+}
+
+.auth-form {
+  margin-top: 25px;
+}
+
+.form-field {
+  margin-bottom: 16px;
+}
+
+.form-field label {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #bdcbd4;
+
+  font-size: 9px;
+
+  font-weight: 650;
+}
+
+.form-field input {
+  width: 100%;
+
+  height: 44px;
+
+  padding:
+    0 12px;
+
+  color: #edf4f8;
+
+  background:
+    rgba(255,255,255,0.035);
+
+  border:
+    1px solid rgba(255,255,255,0.10);
+
+  border-radius: 6px;
+
+  outline: none;
+
+  font-size: 10px;
+}
+
+.form-field input:focus {
+  border-color: #2999d7;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(41,153,215,0.08);
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 42px;
+}
+
+.password-field button {
+  position: absolute;
+
+  top: 50%;
+  right: 9px;
+
+  transform:
+    translateY(-50%);
+
+  border: none;
+
+  background: transparent;
+
+  color: #728692;
+
+  cursor: pointer;
+}
+
+.auth-options {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 17px;
+
+  color: #718491;
+
+  font-size: 9px;
+}
+
+.auth-options label {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+}
+
+.auth-options button {
+  border: none;
+
+  background: transparent;
+
+  color: #48a9e4;
+
+  font-size: 9px;
+
+  cursor: pointer;
+}
+
+.auth-submit {
+  width: 100%;
+
+  height: 45px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  border: none;
+
+  border-radius: 6px;
+
+  color: white;
+
+  background: #17668d;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    transform .2s ease,
+    background .2s ease;
+}
+
+.auth-submit:hover {
+  background: #1c789f;
+
+  transform:
+    translateY(-2px);
+}
+
+.auth-submit.green {
+  background: #278266;
+}
+
+.auth-submit.purple {
+  background: #694ba7;
+}
+
+.auth-submit.orange {
+  background: #a56c25;
+}
+
+.auth-submit.pink {
+  background: #a54173;
+}
+
+.auth-submit.red {
+  background: #a83d42;
+}
+
+.auth-footer {
+  margin-top: 19px;
+
+  text-align: center;
+
+  color: #6f828e;
+
+  font-size: 9px;
+}
+
+.auth-footer button {
+  margin-left: 4px;
+
+  color: #48a9e4;
+
+  border: none;
+
+  background: transparent;
+
+  font-size: 9px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 1100px) {
+
+  .role-grid-main {
+    grid-template-columns:
+      repeat(3, 1fr);
+  }
+
+  .auth-layout {
+    gap: 40px;
+  }
+
+}
+
+@media (max-width: 800px) {
+
+  .portal-header {
+    padding: 0 20px;
+  }
+
+  .header-status {
+    display: none;
+  }
+
+  .role-grid-main {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .updates-grid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .services-section {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-intro {
+    max-width: 600px;
+  }
+
+  .auth-card {
+    max-width: 500px;
+  }
+
+}
+
+@media (max-width: 520px) {
+
+  .portal-hero {
+    padding:
+      45px 20px;
+  }
+
+  .roles-section,
+  .updates-section,
+  .services-section {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .role-grid-main {
+    grid-template-columns: 1fr;
+  }
+
+  .updates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-title {
+    display: block;
+  }
+
+  .section-title > p {
+    margin-top: 8px;
+  }
+
+  .portal-footer {
+    grid-template-columns: 1fr;
+
+    gap: 10px;
+
+    padding: 20px;
+
+    text-align: center;
+  }
+
+  .auth-layout {
+    gap: 35px;
+  }
+
+  .login-view {
+    padding:
+      35px 20px;
+  }
+
+  .auth-card {
+    padding: 23px;
+  }
+
+}
+
+
+/* =====================================================
+   CAMPUS AUTH LANDING
+===================================================== */
+
+.campus-auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  color: #182330;
+  background:
+    radial-gradient(
+      circle at 16% 14%,
+      rgba(16, 185, 129, 0.16),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 88% 82%,
+      rgba(20, 184, 166, 0.13),
+      transparent 32%
+    ),
+    linear-gradient(135deg, #f8fbfa 0%, #eef7f4 100%);
+}
+
+.campus-auth-shell {
+  width: min(100%, 1040px);
+  min-height: 680px;
+  display: grid;
+  grid-template-columns: minmax(360px, 0.78fr) minmax(460px, 1fr);
+  overflow: hidden;
+  border: 1px solid rgba(15, 118, 110, 0.11);
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow:
+    0 26px 70px rgba(13, 77, 63, 0.12),
+    0 4px 18px rgba(15, 23, 42, 0.06);
+  opacity: 0;
+  transform: translateY(18px) scale(0.985);
+  transition:
+    opacity 0.65s ease,
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.campus-auth-shell.mounted {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.campus-auth-showcase {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 42px;
+  color: #ffffff;
+  background:
+    linear-gradient(155deg, rgba(4, 120, 87, 0.98), rgba(13, 148, 136, 0.96)),
+    #059669;
+}
+
+.campus-auth-showcase::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.65), transparent 82%);
+  pointer-events: none;
+}
+
+.campus-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(26px);
+  pointer-events: none;
+}
+
+.campus-orb-one {
+  width: 220px;
+  height: 220px;
+  top: -72px;
+  right: -86px;
+  background: rgba(110, 231, 183, 0.42);
+}
+
+.campus-orb-two {
+  width: 270px;
+  height: 270px;
+  left: -120px;
+  bottom: -110px;
+  background: rgba(15, 118, 110, 0.48);
+}
+
+.campus-showcase-content,
+.campus-showcase-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.campus-auth-brand,
+.campus-mobile-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+}
+
+.campus-brand-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #059669;
+  box-shadow: 0 16px 34px rgba(6, 95, 70, 0.22);
+}
+
+.campus-role-copy {
+  margin-top: 76px;
+  animation: campusFade 0.32s ease both;
+}
+
+@keyframes campusFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.campus-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.17);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+}
+
+.campus-role-copy h1 {
+  max-width: 360px;
+  margin-top: 22px;
+  font-size: clamp(36px, 4vw, 46px);
+  line-height: 1.06;
+  letter-spacing: -1.4px;
+}
+
+.campus-role-copy h1 span {
+  display: block;
+  color: #bbf7d0;
+}
+
+.campus-role-copy p {
+  max-width: 360px;
+  margin-top: 20px;
+  color: rgba(236, 253, 245, 0.9);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.campus-showcase-footer {
+  display: grid;
+  gap: 13px;
+}
+
+.campus-feature-line {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: rgba(236, 253, 245, 0.86);
+  font-size: 14px;
+}
+
+.campus-feature-line svg {
+  color: #bbf7d0;
+}
+
+.campus-auth-panel {
+  display: flex;
+  align-items: center;
+  padding: 48px 56px;
+}
+
+.campus-mobile-brand {
+  display: none;
+  margin-bottom: 30px;
+  color: #0f172a;
+}
+
+.campus-mobile-brand .campus-brand-icon {
+  color: #ffffff;
+  background: #059669;
+}
+
+.campus-auth-inner {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.campus-auth-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 31px;
+  border-radius: 14px;
+  background: #f1f5f4;
+}
+
+.campus-auth-toggle button {
+  min-height: 42px;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.campus-auth-toggle button.active {
+  color: #047857;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.07);
+}
+
+.campus-auth-heading {
+  margin-bottom: 26px;
+}
+
+.campus-auth-heading h2 {
+  color: #0f172a;
+  font-size: 29px;
+  line-height: 1.1;
+  letter-spacing: -0.7px;
+}
+
+.campus-auth-heading p {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.campus-role-selector {
+  margin-bottom: 24px;
+}
+
+.campus-role-selector > label,
+.campus-field > label {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.campus-role-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.campus-role-grid button {
+  min-height: 78px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.campus-role-grid button:hover {
+  color: #047857;
+  border-color: #99f6e4;
+  background: #f0fdfa;
+  transform: translateY(-2px);
+}
+
+.campus-role-grid button.active {
+  color: #047857;
+  border-color: #10b981;
+  background: #ecfdf5;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+}
+
+.campus-role-grid span {
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.campus-auth-form {
+  display: grid;
+  gap: 17px;
+}
+
+.campus-field {
+  display: grid;
+  gap: 0;
+}
+
+.campus-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.campus-input-wrap svg {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.campus-input-wrap input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px 0 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  outline: none;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 14px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.campus-input-wrap input::placeholder {
+  color: #94a3b8;
+}
+
+.campus-input-wrap input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.13);
+  transform: translateY(-1px);
+}
+
+.campus-form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -2px;
+}
+
+.campus-form-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.campus-form-options input {
+  width: 15px;
+  height: 15px;
+  accent-color: #059669;
+}
+
+.campus-form-options button {
+  border: none;
+  background: transparent;
+  color: #059669;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.campus-submit {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: none;
+  border-radius: 15px;
+  background: #059669;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 15px 28px rgba(5, 150, 105, 0.22);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.campus-submit:hover {
+  background: #047857;
+  box-shadow: 0 18px 34px rgba(5, 150, 105, 0.28);
+  transform: translateY(-2px);
+}
+
+.campus-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.78;
+  transform: none;
+}
+
+.campus-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.36);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: campusSpin 0.8s linear infinite;
+}
+
+@keyframes campusSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.campus-terms {
+  margin-top: 28px;
+  color: #64748b;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.campus-terms a {
+  color: #334155;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.campus-terms a:hover {
+  color: #059669;
+}
+
+@media (max-width: 900px) {
+  .campus-auth-page {
+    align-items: flex-start;
+    padding: 18px;
+  }
+
+  .campus-auth-shell {
+    min-height: auto;
+    grid-template-columns: 1fr;
+    border-radius: 22px;
+  }
+
+  .campus-auth-showcase {
+    display: none;
+  }
+
+  .campus-auth-panel {
+    padding: 34px 24px;
+  }
+
+  .campus-mobile-brand {
+    display: flex;
+  }
+}
+
+@media (max-width: 560px) {
+  .campus-auth-page {
+    padding: 0;
+    background: #ffffff;
+  }
+
+  .campus-auth-shell {
+    width: 100%;
+    min-height: 100vh;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .campus-auth-panel {
+    align-items: flex-start;
+    padding: 28px 18px;
+  }
+
+  .campus-role-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .campus-role-grid button {
+    min-height: 70px;
+  }
+
+  .campus-form-options {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campus-auth-shell,
+  .campus-role-grid button,
+  .campus-input-wrap input,
+  .campus-submit {
+    transition-duration: 0.01ms !important;
+  }
+}
