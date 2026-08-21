@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -12,6 +12,7 @@ import {
   User,
   Users,
 } from "lucide-react";
+import { registerUser, signInUser } from "../utils/authStorage";
 
 const roles = [
   {
@@ -206,6 +207,7 @@ function AuthForm({
   form,
   onChange,
   onSubmit,
+  error,
 }) {
   const emailLabel =
     activeRole === "student"
@@ -229,6 +231,17 @@ function AuthForm({
           name="name"
           placeholder="e.g. Arjun Sharma"
           value={form.name}
+          onChange={onChange}
+        />
+      )}
+
+      {!isLogin && activeRole === "faculty" && (
+        <Field
+          icon={Briefcase}
+          label="Department"
+          name="department"
+          placeholder="e.g. Computer Science"
+          value={form.department}
           onChange={onChange}
         />
       )}
@@ -284,6 +297,8 @@ function AuthForm({
           </>
         )}
       </button>
+
+      {error && <p className="campus-form-error">{error}</p>}
     </form>
   );
 }
@@ -293,21 +308,19 @@ function CampusOSAuth() {
   const [isLogin, setIsLogin] = useState(true);
   const [activeRole, setActiveRole] = useState("student");
   const [isLoading, setIsLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
+    department: "",
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const currentRole =
     roles.find((role) => role.id === activeRole) || roles[0];
 
   const handleChange = (event) => {
+    setError("");
     setForm({
       ...form,
       [event.target.name]: event.target.value,
@@ -319,7 +332,22 @@ function CampusOSAuth() {
     setIsLoading(true);
 
     window.setTimeout(() => {
+      const result = isLogin
+        ? signInUser(activeRole, form.email.trim(), form.password)
+        : registerUser({
+            role: activeRole,
+            name: form.name.trim(),
+            email: form.email.trim(),
+            password: form.password,
+            department: form.department.trim(),
+          });
+
       setIsLoading(false);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
       navigate(`/${activeRole}`);
     }, 700);
   };
@@ -327,9 +355,7 @@ function CampusOSAuth() {
   return (
     <main className="campus-auth-page">
       <section
-        className={`campus-auth-shell ${
-          mounted ? "mounted" : ""
-        }`}
+        className="campus-auth-shell mounted"
       >
         <ShowcasePanel role={currentRole} />
 
@@ -366,6 +392,7 @@ function CampusOSAuth() {
               form={form}
               onChange={handleChange}
               onSubmit={handleSubmit}
+              error={error}
             />
 
             <p className="campus-terms">
