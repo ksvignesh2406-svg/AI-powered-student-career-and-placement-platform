@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Download, Plus, Search, Trash2, X } from "lucide-react";
+import { Download, Plus, Search, Trash2, X, Users, UserCheck } from "lucide-react";
 import { addUser, getUsers, removeUser, updateUser } from "../../utils/authStorage";
 
 export default function UserDirectoryModal({ onClose, onNotice }) {
@@ -77,191 +77,133 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
 
   return (
     <div
-      className="admin-modal-backdrop"
+      className="adm-modal-backdrop"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="admin-modal">
-        <div className="admin-modal-head">
-          <div>
-            <h3>Campus User Directory</h3>
-            <p>{users.length} total accounts in Campus OS</p>
+      <div className="adm-modal-box">
+        {/* Modal Header */}
+        <div className="adm-modal-header">
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div className="adm-modal-icon-badge">
+              <Users size={22} />
+            </div>
+            <div>
+              <h3 className="adm-modal-title">Campus User Directory</h3>
+              <p className="adm-modal-subtitle">
+                {users.length} total registered accounts in Campus OS
+              </p>
+            </div>
           </div>
+
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <button
               type="button"
-              className="admin-secondary-action"
+              className="adm-btn-secondary"
               onClick={exportCSV}
+              style={{ height: "36px", padding: "0 12px", fontSize: "11px" }}
             >
               <Download size={13} /> Export CSV
             </button>
             <button
               type="button"
-              className="admin-primary-action"
+              className="adm-btn-primary"
               onClick={() => setShowAddForm((v) => !v)}
+              style={{ height: "36px", padding: "0 14px", fontSize: "11px" }}
             >
               <Plus size={14} /> Add User
             </button>
             <button
               type="button"
-              className="admin-icon-button"
+              className="adm-modal-close-btn"
               onClick={onClose}
-              aria-label="Close"
+              aria-label="Close dialog"
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           </div>
         </div>
 
         {/* Add User Form */}
         {showAddForm && (
-          <form
-            onSubmit={handleAddUser}
-            style={{
-              padding: "14px",
-              background: "#ecfdf5",
-              border: "1px solid #a7f3d0",
-              borderRadius: "14px",
-              margin: "14px 0",
-              display: "grid",
-              gap: "8px",
-            }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                gap: "8px",
-              }}
-            >
+          <form onSubmit={handleAddUser} className="adm-add-user-form">
+            <div className="adm-add-user-title">Create New Campus Account</div>
+            <div className="adm-add-user-grid">
               <input
                 name="name"
                 required
-                placeholder="Full Name"
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "8px",
-                  border: "1px solid #cbd5e1",
-                  fontSize: "12px",
-                }}
+                placeholder="Full Name (e.g. Arjun Sharma)"
+                className="adm-input"
               />
               <input
                 name="email"
                 type="email"
                 required
-                placeholder="Institutional Email"
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "8px",
-                  border: "1px solid #cbd5e1",
-                  fontSize: "12px",
-                }}
+                placeholder="Email (e.g. name@campus.edu)"
+                className="adm-input"
               />
-              <select
-                name="role"
-                defaultValue="student"
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "8px",
-                  border: "1px solid #cbd5e1",
-                  fontSize: "12px",
-                }}
-              >
+              <select name="role" defaultValue="student" className="adm-select">
                 <option value="student">Student</option>
                 <option value="faculty">Faculty</option>
                 <option value="parent">Parent</option>
+                <option value="security">Security</option>
                 <option value="admin">Admin</option>
               </select>
               <input
                 name="department"
-                placeholder="Department"
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "8px",
-                  border: "1px solid #cbd5e1",
-                  fontSize: "12px",
-                }}
+                placeholder="Department (e.g. Computer Science)"
+                className="adm-input"
               />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
               <input
                 name="password"
                 type="password"
                 required
                 minLength={6}
-                placeholder="Password (min 6 chars)"
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "8px",
-                  border: "1px solid #cbd5e1",
-                  fontSize: "12px",
-                  flex: 1,
-                  maxWidth: "240px",
-                }}
+                placeholder="Temporary Password (min 6 chars)"
+                className="adm-input"
+                style={{ maxWidth: "260px" }}
               />
-              <button type="submit" className="admin-primary-action">
-                Create Account
-              </button>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="adm-btn-secondary"
+                  style={{ height: "36px" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="adm-btn-primary"
+                  style={{ height: "36px" }}
+                >
+                  <UserCheck size={14} /> Create Account
+                </button>
+              </div>
             </div>
           </form>
         )}
 
         {/* Toolbar */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: "10px",
-            alignItems: "center",
-            marginTop: "12px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 10px",
-              background: "#f8faf9",
-              border: "1px solid #e2ebe6",
-              borderRadius: "10px",
-              flex: 1,
-              maxWidth: "320px",
-            }}
-          >
+        <div className="adm-dir-toolbar">
+          <div className="adm-search-wrap">
             <Search size={14} style={{ color: "#94a3b8" }} />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search directory..."
-              style={{
-                border: "none",
-                background: "transparent",
-                fontSize: "12px",
-                outline: "none",
-                width: "100%",
-              }}
+              placeholder="Search name, email, department..."
             />
           </div>
 
-          <div style={{ display: "flex", gap: "4px" }}>
-            {["all", "student", "faculty", "parent", "admin"].map((r) => (
+          <div className="adm-filter-pills">
+            {["all", "student", "faculty", "parent", "security", "admin"].map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => setRoleFilter(r)}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: "6px",
-                  border: "0",
-                  fontSize: "11px",
-                  fontWeight: "750",
-                  textTransform: "capitalize",
-                  cursor: "pointer",
-                  background: roleFilter === r ? "#059669" : "#f1f5f3",
-                  color: roleFilter === r ? "#ffffff" : "#475569",
-                }}
+                className={`adm-filter-btn ${roleFilter === r ? "active" : ""}`}
               >
                 {r}
               </button>
@@ -269,9 +211,9 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="admin-table-container">
-          <table className="admin-table">
+        {/* Directory Table */}
+        <div className="adm-table-wrap">
+          <table className="adm-table">
             <thead>
               <tr>
                 <th>User</th>
@@ -285,30 +227,26 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
               {filteredUsers.map((u) => (
                 <tr key={u.id}>
                   <td>
-                    <strong>{u.name}</strong>
-                    <div style={{ color: "#718096", fontSize: "11px" }}>
-                      {u.email}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div className="adm-user-avatar">
+                        {(u.name || "U").slice(0, 1).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="adm-user-name">{u.name}</div>
+                        <div className="adm-user-email">{u.email}</div>
+                      </div>
                     </div>
                   </td>
                   <td>
-                    <span
-                      style={{
-                        padding: "2px 6px",
-                        background: "#e2e8f0",
-                        borderRadius: "4px",
-                        fontSize: "10px",
-                        fontWeight: "700",
-                        textTransform: "capitalize",
-                      }}
-                    >
-                      {u.role}
-                    </span>
+                    <span className="adm-role-tag">{u.role}</span>
                   </td>
-                  <td>{u.department || "General"}</td>
+                  <td style={{ color: "#64748b", fontSize: "12px" }}>
+                    {u.department || "General"}
+                  </td>
                   <td>
                     <span
-                      className={`admin-status-tag ${
-                        u.status === "suspended" ? "pending" : "resolved"
+                      className={`adm-status-tag ${
+                        u.status === "suspended" ? "suspended" : "active"
                       }`}
                     >
                       {u.status || "active"}
@@ -317,20 +255,18 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
                   <td style={{ textAlign: "right" }}>
                     <button
                       type="button"
-                      className="admin-secondary-action"
-                      style={{ padding: "4px 8px", fontSize: "10px", marginRight: "6px" }}
+                      className="adm-btn-table-action"
                       onClick={() => handleToggleStatus(u)}
                     >
                       {u.status === "suspended" ? "Activate" : "Suspend"}
                     </button>
                     <button
                       type="button"
-                      className="admin-icon-button"
-                      style={{ display: "inline-grid", padding: "4px" }}
+                      className="adm-btn-delete"
                       onClick={() => handleRemove(u)}
-                      title="Remove"
+                      title="Remove user"
                     >
-                      <Trash2 size={14} style={{ color: "#ef4444" }} />
+                      <Trash2 size={13} />
                     </button>
                   </td>
                 </tr>
@@ -339,9 +275,9 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
                 <tr>
                   <td
                     colSpan={5}
-                    style={{ textAlign: "center", padding: "24px", color: "#94a3b8" }}
+                    style={{ textAlign: "center", padding: "32px", color: "#94a3b8" }}
                   >
-                    No matching accounts found.
+                    No matching accounts found in directory.
                   </td>
                 </tr>
               )}
@@ -349,8 +285,16 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
           </table>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
-          <button type="button" className="admin-secondary-action" onClick={onClose}>
+        {/* Modal Footer */}
+        <div className="adm-modal-footer">
+          <span style={{ fontSize: "12px", color: "#64748b" }}>
+            Showing {filteredUsers.length} of {users.length} accounts
+          </span>
+          <button
+            type="button"
+            className="adm-btn-secondary"
+            onClick={onClose}
+          >
             Close
           </button>
         </div>
