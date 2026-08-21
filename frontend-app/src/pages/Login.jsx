@@ -68,6 +68,12 @@ function BrandMark({ compact = false }) {
     <div className={compact ? "campus-mobile-brand" : "campus-auth-brand"}>
       <div className="campus-brand-icon">
         <Sparkles size={24} strokeWidth={2.5} />
+  const departments = [
+    "Computer Science Dept.",
+    "Information Technology Dept.",
+    "Electronics & Communication Dept.",
+    "Mechanical Engineering Dept.",
+  ];
       </div>
 
       <span>
