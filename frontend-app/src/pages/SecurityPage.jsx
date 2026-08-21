@@ -1,369 +1,310 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  AlertOctagon,
-  Bell,
-  CheckCircle,
-  Clock,
-  LogOut,
-  MapPin,
-  Moon,
-  Navigation,
-  Radio,
-  Shield,
-  ShieldAlert,
-  ShieldCheck,
-  Sparkles,
-  Users,
-} from "lucide-react";
-import { fetchDashboard } from "../utils/dashboardApi";
+import { Check } from "lucide-react";
 import { clearSession, getSessionUser } from "../utils/authStorage";
+
+import SecurityHeader from "../components/security/SecurityHeader";
+import SecurityBanner from "../components/security/SecurityBanner";
+import UrgentAlertBanner from "../components/security/UrgentAlertBanner";
+import SafetyAlertsPanel from "../components/security/SafetyAlertsPanel";
+import CampusMapPanel from "../components/security/CampusMapPanel";
+import NightWalkPanel from "../components/security/NightWalkPanel";
+import GuardsOnDutyPanel from "../components/security/GuardsOnDutyPanel";
+import PublicAlertModal from "../components/security/PublicAlertModal";
 import "../styles/security-dashboard.css";
 
-const defaultDashboard = {
-  summary: {
-    activeGuards: 0,
-    openAlerts: 0,
-    activeSafeWalks: 0,
-    gateCheckinsToday: 0,
+const initialAlerts = [
+  {
+    id: "ALT-1042",
+    priority: "URGENT",
+    title: "Escort Request & Unsafe Feeling",
+    category: "Student Assistance",
+    location: "Hostel B Stairwell (Floor 2)",
+    time: "Just now",
+    timestamp: Date.now(),
+    description:
+      "Student requested guard escort back to room after studying late. Audio check-in flagged low voice tone.",
+    status: "Pending",
+    reporter: "Ananya S. (Hostel B, R-204)",
   },
-  activeAlerts: [],
-  safeWalks: [],
-  patrolZones: [],
-  incidentLogs: [],
-};
+  {
+    id: "ALT-1039",
+    priority: "ATTENTION",
+    title: "Late Night Gathering past Curfew",
+    category: "Hostel Rules",
+    location: "North Courtyard Bench",
+    time: "4 mins ago",
+    timestamp: Date.now() - 240000,
+    description:
+      "Group of 6 students sitting near the fountain past curfew. Mild noise reported by floor warden.",
+    status: "Assigned",
+    reporter: "AI Smart Cam #04",
+  },
+  {
+    id: "ALT-1035",
+    priority: "INFO",
+    title: "Pathway Lighting Flickering",
+    category: "Maintenance",
+    location: "Path between Library & Hostel C",
+    time: "20 mins ago",
+    timestamp: Date.now() - 1200000,
+    description:
+      "Solar lamp light #12 is dimming. Maintenance ticket automatically logged.",
+    status: "Resolved",
+    reporter: "Night Warden Patrol",
+  },
+];
+
+const initialNightWalks = [
+  {
+    id: "NW-88",
+    name: "Priya R.",
+    hostelRoom: "Hostel A - 312",
+    destination: "Hostel A Block",
+    secondsRemaining: 310,
+    totalSeconds: 600,
+    status: "normal",
+    phone: "+91 98765 43210",
+  },
+  {
+    id: "NW-91",
+    name: "Rahul K.",
+    hostelRoom: "Hostel C - 108",
+    destination: "Main Gate Canteen",
+    secondsRemaining: 55,
+    totalSeconds: 900,
+    status: "check-in",
+    phone: "+91 98765 12345",
+  },
+];
+
+const initialGuards = [
+  {
+    id: "G-1",
+    name: "Suresh Kumar",
+    role: "Senior Warden Guard",
+    status: "On Duty",
+    location: "Hostel B Desk",
+    battery: 94,
+    initials: "SK",
+  },
+  {
+    id: "G-2",
+    name: "Meena Sharma",
+    role: "Patrol Staff",
+    status: "Assisting",
+    location: "North Courtyard",
+    battery: 81,
+    initials: "MS",
+  },
+  {
+    id: "G-3",
+    name: "Ramesh Singh",
+    role: "Gate 1 Warden",
+    status: "On Duty",
+    location: "Main Entrance",
+    battery: 88,
+    initials: "RS",
+  },
+];
 
 export default function SecurityPage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(() => getSessionUser());
-  const [dashboard, setDashboard] = useState(defaultDashboard);
-  const [alerts, setAlerts] = useState([]);
-  const [safeWalks, setSafeWalks] = useState([]);
-  const [error, setError] = useState("");
+  const [user] = useState(() => getSessionUser());
+  const [time, setTime] = useState(null);
+  const [alerts, setAlerts] = useState(initialAlerts);
+  const [nightWalks, setNightWalks] = useState(initialNightWalks);
+  const [guards] = useState(initialGuards);
+
+  const [filterPriority, setFilterPriority] = useState("ALL");
+  const [selectedAlert, setSelectedAlert] = useState(initialAlerts[0]);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [audioMuted, setAudioMuted] = useState(false);
+  const [mapMode, setMapMode] = useState("3D Campus");
+  const [notice, setNotice] = useState("");
+
+  const flash = (msg) => {
+    setNotice(msg);
+    setTimeout(() => setNotice(""), 3000);
+  };
 
   useEffect(() => {
-    if (!user || user.role !== "security") {
+    if (!user || (user.role !== "security" && user.role !== "admin")) {
       navigate("/", { replace: true });
-      return;
     }
+  }, [navigate, user]);
 
-    let isMounted = true;
+  // Live Clock Ticker
+  useEffect(() => {
+    setTime(new Date());
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-    fetchDashboard("security").then((result) => {
-      if (!isMounted) return;
+  // Countdown timers for Night Walks
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNightWalks((prev) =>
+        prev.map((nw) => {
+          const nextSec = Math.max(0, nw.secondsRemaining - 1);
+          let status = "normal";
+          if (nextSec <= 60 && nextSec > 0) status = "check-in";
+          if (nextSec === 0) status = "overdue";
+          return { ...nw, secondsRemaining: nextSec, status };
+        })
+      );
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
+  const formattedTime = time
+    ? time.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : "09:21:52 PM";
 
-      setUser({
-        ...result.user,
-        role: result.user.role.toLowerCase(),
-      });
-      setDashboard(result.dashboard);
-      setAlerts(result.dashboard.activeAlerts || []);
-      setSafeWalks(result.dashboard.safeWalks || []);
-    });
+  const formattedDate = time
+    ? time.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      })
+    : "Fri, Aug 21";
 
-    return () => {
-      isMounted = false;
-    };
-  }, [navigate, user?.role]);
+  const handleAssignGuard = (id) => {
+    setAlerts((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, status: "Assigned" } : item
+      )
+    );
+    if (selectedAlert?.id === id) {
+      setSelectedAlert((prev) =>
+        prev ? { ...prev, status: "Assigned" } : null
+      );
+    }
+    flash(`Guard dispatched for incident #${id}`);
+  };
 
   const handleLogout = () => {
     clearSession();
     navigate("/", { replace: true });
   };
 
-  const handleDispatch = (alertId) => {
-    setAlerts((prev) =>
-      prev.map((a) =>
-        a.id === alertId
-          ? {
-              ...a,
-              status: "EN_ROUTE",
-              assignedUnit: "Patrol Unit Alpha Dispatched (ETA 2m)",
-            }
-          : a
-      )
-    );
-  };
+  const filteredAlerts = alerts.filter((item) => {
+    if (filterPriority === "ALL") return true;
+    return item.priority === filterPriority;
+  });
 
-  const handleResolveAlert = (alertId) => {
-    setAlerts((prev) => prev.filter((a) => a.id !== alertId));
-  };
-
-  const handleCompleteWalk = (walkId) => {
-    setSafeWalks((prev) => prev.filter((w) => w.id !== walkId));
-  };
-
-  if (!user) return null;
-
-  const initials = user.name
-    ? user.name
-        .split(" ")
-        .map((p) => p[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "SC";
+  const urgentAlert = alerts.find(
+    (a) => a.priority === "URGENT" && a.status === "Pending"
+  );
 
   return (
-    <div className="security-dashboard">
-      <header className="security-header">
-        <div className="security-header-inner">
-          <div className="security-brand">
-            <span className="security-brand-mark">
-              <ShieldAlert size={18} />
-            </span>
-            <span>Campus OS</span>
-          </div>
+    <div className="security-app">
+      <div className="security-shell">
+        {/* 1. TOP NAV BAR */}
+        <SecurityHeader
+          user={user}
+          formattedDate={formattedDate}
+          formattedTime={formattedTime}
+          audioMuted={audioMuted}
+          onToggleAudio={() => setAudioMuted(!audioMuted)}
+          onOpenBroadcast={() => setIsBroadcastModalOpen(true)}
+          onLogout={handleLogout}
+        />
 
-          <div className="security-user-menu">
-            <div className="security-user-copy">
-              <strong>{user.name}</strong>
-              <span>Security Command Center</span>
-            </div>
-            <span className="security-avatar">{initials}</span>
-            <button
-              type="button"
-              className="security-icon-button"
-              onClick={handleLogout}
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              <LogOut size={18} />
-            </button>
+        {/* 2. HERO EMERALD BANNER */}
+        <SecurityBanner
+          activeAlertsCount={
+            alerts.filter((a) => a.status === "Pending").length
+          }
+          nightWalksCount={nightWalks.length}
+          guardsReadyCount={guards.filter((g) => g.status === "On Duty").length}
+        />
+
+        {/* 3. URGENT ALERT BANNER */}
+        <UrgentAlertBanner
+          alert={urgentAlert}
+          onAssignGuard={handleAssignGuard}
+        />
+
+        {/* 4. THREE-COLUMN DASHBOARD GRID */}
+        <div className="sec-grid">
+          {/* LEFT PANEL: SAFETY ALERTS & REPORTS */}
+          <SafetyAlertsPanel
+            alerts={filteredAlerts}
+            filterPriority={filterPriority}
+            onFilterChange={setFilterPriority}
+            selectedAlert={selectedAlert}
+            onSelectAlert={setSelectedAlert}
+          />
+
+          {/* CENTER PANEL: 3D CAMPUS MAP CONTAINER */}
+          <CampusMapPanel
+            mapMode={mapMode}
+            onMapModeChange={setMapMode}
+            selectedAlert={selectedAlert}
+            onAssignGuard={handleAssignGuard}
+          />
+
+          {/* RIGHT PANEL: NIGHT WALKS & GUARDS ON DUTY */}
+          <div className="sec-right-col">
+            <NightWalkPanel nightWalks={nightWalks} />
+            <GuardsOnDutyPanel guards={guards} />
           </div>
         </div>
-      </header>
+      </div>
 
-      <main className="security-main">
-        {error && (
-          <p
+      {/* 5. PUBLIC ALERT BROADCAST MODAL */}
+      <PublicAlertModal
+        isOpen={isBroadcastModalOpen}
+        onClose={() => setIsBroadcastModalOpen(false)}
+        onSendAlert={() =>
+          flash("Public advisory alert broadcasted to all residents.")
+        }
+        operatorName={`${user?.name || "Santhosh K."} (Head Warden)`}
+      />
+
+      {/* Notice Toast */}
+      {notice && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "24px",
+            right: "28px",
+            zIndex: 70,
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "12px 18px",
+            color: "#047857",
+            background: "#ffffff",
+            border: "1px solid #a7f3d0",
+            borderRadius: "14px",
+            boxShadow: "0 16px 36px rgba(5, 118, 85, 0.15)",
+            fontSize: "12px",
+            fontWeight: "750",
+          }}
+        >
+          <div
             style={{
-              padding: "12px 16px",
-              background: "#fee2e2",
-              color: "#991b1b",
-              borderRadius: "12px",
-              marginBottom: "20px",
-              fontSize: "13px",
-              fontWeight: "700",
+              width: "20px",
+              height: "20px",
+              borderRadius: "50%",
+              background: "#059669",
+              color: "white",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            {error}
-          </p>
-        )}
-
-        <section className="security-banner">
-          <div>
-            <span className="security-eyebrow">
-              <Radio size={14} /> Live Command Feed
-            </span>
-            <h1>Campus Security Center</h1>
-            <p>
-              <ShieldCheck size={16} /> Campus perimeter secure · Real-time spatial monitoring active
-            </p>
+            <Check size={12} strokeWidth={3} />
           </div>
-
-          <div className="security-stats-grid">
-            <div className="security-stat-card">
-              <strong>{dashboard.summary.activeGuards}</strong>
-              <span>Patrol Units</span>
-            </div>
-            <div className="security-stat-card">
-              <strong>{alerts.length}</strong>
-              <span>SOS Alerts</span>
-            </div>
-            <div className="security-stat-card">
-              <strong>{safeWalks.length}</strong>
-              <span>Active SafeWalks</span>
-            </div>
-            <div className="security-stat-card">
-              <strong>{dashboard.summary.gateCheckinsToday}</strong>
-              <span>Gate Passes</span>
-            </div>
-          </div>
-        </section>
-
-        <div className="security-grid">
-          <div className="security-content" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {/* Live SOS Emergencies */}
-            <section className="security-panel">
-              <div className="security-panel-heading">
-                <div>
-                  <span className="security-section-kicker">Emergency Triage</span>
-                  <h2>Active SOS Broadcasts</h2>
-                </div>
-                <span style={{ fontSize: "11px", fontWeight: "800", color: alerts.length > 0 ? "#dc2626" : "#16a34a" }}>
-                  {alerts.length > 0 ? `${alerts.length} Incident Active` : "All Clear"}
-                </span>
-              </div>
-
-              {alerts.length > 0 ? (
-                alerts.map((alert) => (
-                  <div key={alert.id} className="sos-alert-card">
-                    <div className="sos-alert-header">
-                      <span className="sos-badge-pulse">
-                        <AlertOctagon size={14} /> {alert.type}
-                      </span>
-                      <span style={{ fontSize: "11px", color: "#b91c1c", fontWeight: "700" }}>
-                        {alert.time}
-                      </span>
-                    </div>
-
-                    <div className="sos-alert-body">
-                      <h3>
-                        {alert.senderName} ({alert.registerNumber})
-                      </h3>
-                      <div className="sos-alert-meta">
-                        <span>
-                          <MapPin size={14} color="#dc2626" /> {alert.location}
-                        </span>
-                        <span>
-                          <Shield size={14} color="#dc2626" /> {alert.assignedUnit}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="sos-actions">
-                      {alert.status === "DISPATCHED" && (
-                        <button
-                          type="button"
-                          className="btn-dispatch"
-                          onClick={() => handleDispatch(alert.id)}
-                        >
-                          <Navigation size={14} /> Dispatch Nearest Patrol Unit
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="btn-resolve"
-                        onClick={() => handleResolveAlert(alert.id)}
-                      >
-                        <CheckCircle size={14} /> Resolve False Alarm / Incident
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ textAlign: "center", padding: "32px 0", color: "#64748b" }}>
-                  <ShieldCheck size={40} color="#16a34a" style={{ margin: "0 auto 10px" }} />
-                  <p style={{ fontWeight: "700", fontSize: "14px", color: "#334155" }}>
-                    No active emergency broadcasts
-                  </p>
-                  <span style={{ fontSize: "12px", color: "#94a3b8" }}>
-                    All SOS channels and student beacons are quiet.
-                  </span>
-                </div>
-              )}
-            </section>
-
-            {/* Active SafeWalk Tracking */}
-            <section className="security-panel">
-              <div className="security-panel-heading">
-                <div>
-                  <span className="security-section-kicker">Companion Monitoring</span>
-                  <h2>Active Night SafeWalks</h2>
-                </div>
-                <Moon size={18} color="#0f172a" />
-              </div>
-
-              <div className="safewalk-list">
-                {safeWalks.map((walk) => (
-                  <div key={walk.id} className="safewalk-card">
-                    <div className="safewalk-info">
-                      <h4>{walk.studentName}</h4>
-                      <p>
-                        <MapPin size={13} /> Destination: {walk.destination}
-                      </p>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <div className="safewalk-timer">
-                        <Clock size={14} /> {walk.remainingMins}m left
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleCompleteWalk(walk.id)}
-                        style={{
-                          border: "1px solid #cbd5e1",
-                          borderRadius: "10px",
-                          background: "white",
-                          padding: "6px 12px",
-                          fontSize: "11px",
-                          fontWeight: "700",
-                          cursor: "pointer",
-                          color: "#475569",
-                        }}
-                      >
-                        Mark Arrived
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {safeWalks.length === 0 && (
-                  <p style={{ textAlign: "center", color: "#94a3b8", fontSize: "13px", padding: "16px" }}>
-                    No active night walk sessions at this time.
-                  </p>
-                )}
-              </div>
-            </section>
-          </div>
-
-          <aside className="security-sidebar" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            {/* Patrol Zones */}
-            <section className="security-panel">
-              <div className="security-panel-heading">
-                <div>
-                  <span className="security-section-kicker">Deployment</span>
-                  <h2>Patrol Zones</h2>
-                </div>
-                <Navigation size={18} color="#dc2626" />
-              </div>
-
-              <div className="patrol-list">
-                {dashboard.patrolZones.map((zone) => (
-                  <div key={zone.id} className="patrol-card">
-                    <div className="patrol-card-header">
-                      <strong>{zone.name}</strong>
-                      <span className="patrol-status-pill">{zone.status}</span>
-                    </div>
-                    <div className="patrol-meta">
-                      <span>👮 {zone.officer}</span>
-                      <span>⏱️ {zone.lastCheckin}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Incident Logs */}
-            <section className="security-panel">
-              <div className="security-panel-heading">
-                <div>
-                  <span className="security-section-kicker">Logbook</span>
-                  <h2>Recent Incidents</h2>
-                </div>
-                <Shield size={18} color="#64748b" />
-              </div>
-
-              <div className="incident-list">
-                {dashboard.incidentLogs.map((inc) => (
-                  <div key={inc.id} className="incident-card">
-                    <strong>{inc.title}</strong>
-                    <div className="incident-meta">
-                      <span>Reported by: {inc.reporter}</span>
-                      <span>{inc.time}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </aside>
+          <span>{notice}</span>
         </div>
-      </main>
+      )}
     </div>
   );
 }
