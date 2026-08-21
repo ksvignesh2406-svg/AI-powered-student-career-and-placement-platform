@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const register = async (req, res) => {
     try {
@@ -76,10 +77,22 @@ const register = async (req, res) => {
             role
         });
 
+        const token = jwt.sign(
+            {
+                id: user.id,
+                role: user.role
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "1d"
+            }
+        );
+
         // 7. Return response
         res.status(201).json({
             success: true,
             message: "User registered successfully",
+            token,
             user: {
                 id: user.id,
                 name: user.name,
@@ -148,7 +161,14 @@ const login = async (req, res) => {
         }
 
         // 5. Check selected role
-        if (user.role !== role) {
+        const normalizeRole = (r) => {
+            if (!r) return "";
+            const upper = r.toUpperCase();
+            if (upper === "PLACEMENT" || upper === "PLACEMENT_OFFICER") return "PLACEMENT_OFFICER";
+            return upper;
+        };
+
+        if (normalizeRole(user.role) !== normalizeRole(role)) {
             return res.status(401).json({
                 success: false,
                 message: "Invalid credentials or role"
@@ -167,9 +187,6 @@ const login = async (req, res) => {
                 message: "Invalid credentials"
             });
         }
-
-        // 7. Create JWT
-        const jwt = require("jsonwebtoken");
 
         const token = jwt.sign(
             {

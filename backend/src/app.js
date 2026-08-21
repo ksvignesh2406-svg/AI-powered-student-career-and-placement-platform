@@ -3,6 +3,7 @@ const cors = require("cors");
 
 const adminRoutes = require("./routes/adminRoutes");
 const authRoutes = require("./routes/authRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 const app = express();
 
@@ -19,5 +20,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 
 app.use("/api/admin", adminRoutes);
+
+app.use("/api/dashboard", dashboardRoutes);
 
 module.exports = app;

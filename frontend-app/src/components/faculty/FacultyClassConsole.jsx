@@ -1,15 +1,19 @@
 import { AlertTriangle, ArrowUpRight, Clock, Users } from "lucide-react";
 
-export default function FacultyClassConsole() {
+export default function FacultyClassConsole({ classes, conflict }) {
+  const [nextClass, ...upcomingClasses] = classes;
+
   return (
     <section className="faculty-console">
-      <div className="faculty-alert">
-        <AlertTriangle size={18} />
-        <div>
-          <strong>Timetable conflict</strong>
-          <p>CS301 Lab and the department meeting overlap at 02:00 PM today.</p>
+      {conflict && (
+        <div className="faculty-alert">
+          <AlertTriangle size={18} />
+          <div>
+            <strong>{conflict.title}</strong>
+            <p>{conflict.message}</p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="faculty-panel">
         <div className="faculty-panel-heading">
@@ -17,29 +21,33 @@ export default function FacultyClassConsole() {
             <span className="faculty-section-kicker">Today</span>
             <h2>Class management</h2>
           </div>
-          <span className="faculty-next-label">2 classes</span>
+          <span className="faculty-next-label">{classes.length} classes</span>
         </div>
 
-        <article className="faculty-active-class">
-          <div className="faculty-class-status">Next class</div>
-          <div className="faculty-class-row">
-            <div>
-              <h3>CS301: Data Structures &amp; Algorithms</h3>
-              <p><Clock size={15} /> 10:00 AM - 11:30 AM <span>Hall 4B</span></p>
+        {nextClass && (
+          <article className="faculty-active-class">
+            <div className="faculty-class-status">{nextClass.status}</div>
+            <div className="faculty-class-row">
+              <div>
+                <h3>{nextClass.title}</h3>
+                <p><Clock size={15} /> {nextClass.time} <span>{nextClass.location}</span></p>
+              </div>
+              <button type="button" className="faculty-primary-action" onClick={() => window.alert(`Attendance portal ready for ${nextClass.id}.`)}>
+                Mark attendance <ArrowUpRight size={16} />
+              </button>
             </div>
-            <button type="button" className="faculty-primary-action" onClick={() => window.alert("Attendance portal ready for CS301.")}>
-              Mark attendance <ArrowUpRight size={16} />
-            </button>
-          </div>
-        </article>
+          </article>
+        )}
 
-        <article className="faculty-class-row faculty-upcoming-class">
-          <div>
-            <h3>CS502: Advanced Operating Systems</h3>
-            <p><Clock size={15} /> 02:00 PM - 03:30 PM <span>Lab 2</span></p>
-          </div>
-          <button type="button" className="faculty-secondary-action"><Users size={15} /> View roster</button>
-        </article>
+        {upcomingClasses.map((classItem) => (
+          <article className="faculty-class-row faculty-upcoming-class" key={classItem.id}>
+            <div>
+              <h3>{classItem.title}</h3>
+              <p><Clock size={15} /> {classItem.time} <span>{classItem.location}</span></p>
+            </div>
+            <button type="button" className="faculty-secondary-action"><Users size={15} /> View roster</button>
+          </article>
+        ))}
       </div>
     </section>
   );

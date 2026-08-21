@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
+  Award,
   Briefcase,
+  Building2,
   CheckCircle2,
   GraduationCap,
   Lock,
@@ -34,10 +36,10 @@ const roles = [
   {
     id: "admin",
     label: "Admin",
-    icon: Briefcase,
-    title: "Wellbeing Engine",
+    icon: Building2,
+    title: "Administration Center",
     description:
-      "Monitor wellbeing signals, analytics, departments and campus-wide operations.",
+      "Manage users, system health, departments, staff accounts and campus-wide operations.",
   },
   {
     id: "faculty",
@@ -46,6 +48,14 @@ const roles = [
     title: "Faculty Portal",
     description:
       "Manage classes, attendance, academic workflows and student support signals.",
+  },
+  {
+    id: "placement",
+    label: "Placement",
+    icon: Award,
+    title: "Placement Cell",
+    description:
+      "Manage hiring drives, interview rounds, eligible candidate lists and corporate partnerships.",
   },
   {
     id: "parent",
@@ -64,9 +74,7 @@ function BrandMark({ compact = false }) {
         <Sparkles size={24} strokeWidth={2.5} />
       </div>
 
-      <span>
-        Campus OS
-      </span>
+      <span>Campus OS</span>
     </div>
   );
 }
@@ -93,9 +101,7 @@ function ShowcasePanel({ role }) {
             <span>{role.title}</span>
           </h1>
 
-          <p>
-            {role.description}
-          </p>
+          <p>{role.description}</p>
         </div>
       </div>
 
@@ -141,9 +147,7 @@ function AuthToggle({ isLogin, onChange }) {
 function RoleSelector({ activeRole, onChange }) {
   return (
     <div className="campus-role-selector">
-      <label>
-        Select Role
-      </label>
+      <label>Select Role</label>
 
       <div className="campus-role-grid">
         {roles.map((role) => {
@@ -179,9 +183,7 @@ function Field({
 }) {
   return (
     <div className="campus-field">
-      <label htmlFor={name}>
-        {label}
-      </label>
+      <label htmlFor={name}>{label}</label>
 
       <div className="campus-input-wrap">
         <Icon size={18} />
@@ -220,10 +222,24 @@ function AuthForm({
       : "name@campus.edu";
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="campus-auth-form"
-    >
+    <form onSubmit={onSubmit} className="campus-auth-form">
+      {!isLogin && ["admin", "security", "placement"].includes(activeRole) && (
+        <div
+          style={{
+            padding: "10px 14px",
+            background: "#fff7ed",
+            border: "1px solid #fed7aa",
+            borderRadius: "10px",
+            color: "#c2410c",
+            fontSize: "12px",
+            lineHeight: "1.4",
+          }}
+        >
+          ℹ️ <strong>Note:</strong> {activeRole.toUpperCase()} accounts are issued directly by
+          Campus Administration. If you have an assigned account, please switch to <strong>Sign In</strong>.
+        </div>
+      )}
+
       {!isLogin && (
         <Field
           icon={User}
@@ -293,17 +309,11 @@ function AuthForm({
             Remember me
           </label>
 
-          <button type="button">
-            Forgot password?
-          </button>
+          <button type="button">Forgot password?</button>
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="campus-submit"
-      >
+      <button type="submit" disabled={isLoading} className="campus-submit">
         {isLoading ? (
           <>
             <span className="campus-spinner" />
@@ -311,9 +321,7 @@ function AuthForm({
           </>
         ) : (
           <>
-            <span>
-              {isLogin ? "Sign In" : "Create Account"}
-            </span>
+            <span>{isLogin ? "Sign In" : "Create Account"}</span>
             <ArrowRight size={18} />
           </>
         )}
@@ -339,64 +347,69 @@ function CampusOSAuth() {
     relationship: "",
   });
 
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setError("");
+
+    setForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
+  };
+
   const currentRole =
     roles.find((role) => role.id === activeRole) || roles[0];
 
-  const handleChange = (event) => {
-    setError("");
-    setForm({
-      ...form,
-      [event.target.name]: event.target.value,
-    });
-  };
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    setError("");
+
+    if (!isLogin && ["admin", "security", "placement"].includes(activeRole)) {
+      setError(
+        `${activeRole.charAt(0).toUpperCase() + activeRole.slice(1)} accounts cannot be registered publicly. Please contact Campus IT or Sign In.`
+      );
+      return;
+    }
+
     setIsLoading(true);
 
-    window.setTimeout(() => {
-      const result = isLogin
-        ? signInUser(activeRole, form.email.trim(), form.password)
-        : registerUser({
-            role: activeRole,
-            name: form.name.trim(),
-            email: form.email.trim(),
-            password: form.password,
-            department: form.department.trim(),
-            childName: form.childName.trim(),
-            relationship: form.relationship.trim(),
-          });
+    const result = isLogin
+      ? await signInUser(activeRole, form.email.trim(), form.password)
+      : await registerUser({
+          role: activeRole,
+          name: form.name.trim(),
+          email: form.email.trim(),
+          password: form.password,
+          department: form.department.trim(),
+          childName: form.childName.trim(),
+          relationship: form.relationship.trim(),
+        });
 
-      setIsLoading(false);
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
+    setIsLoading(false);
 
-      navigate(`/${activeRole}`);
-    }, 700);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    navigate(`/${activeRole}`);
   };
 
   return (
     <main className="campus-auth-page">
-      <section
-        className="campus-auth-shell mounted"
-      >
+      <section className="campus-auth-shell mounted">
         <ShowcasePanel role={currentRole} />
 
         <div className="campus-auth-panel">
           <BrandMark compact />
 
           <div className="campus-auth-inner">
-            <AuthToggle
-              isLogin={isLogin}
-              onChange={setIsLogin}
-            />
+            <AuthToggle isLogin={isLogin} onChange={setIsLogin} />
 
             <div className="campus-auth-heading">
-              <h2>
-                {isLogin ? "Welcome back" : "Get started"}
-              </h2>
+              <h2>{isLogin ? "Welcome back" : "Get started"}</h2>
 
               <p>
                 {isLogin

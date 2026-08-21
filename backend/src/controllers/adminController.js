@@ -21,10 +21,14 @@ const createUser = async (req, res) => {
             "STUDENT",
             "FACULTY",
             "PARENT",
-            "SECURITY"
+            "SECURITY",
+            "PLACEMENT_OFFICER",
+            "ADMIN"
         ];
 
-        if (!allowedRoles.includes(role)) {
+        const targetRole = role === "PLACEMENT" ? "PLACEMENT_OFFICER" : role;
+
+        if (!allowedRoles.includes(targetRole)) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid role"
@@ -32,13 +36,13 @@ const createUser = async (req, res) => {
         }
 
         const existingUser = await User.findOne({
-            where: { email }
+            where: { email: email.toLowerCase() }
         });
 
         if (existingUser) {
             return res.status(409).json({
                 success: false,
-                message: "User already exists"
+                message: "User already exists with this email"
             });
         }
 
@@ -46,9 +50,9 @@ const createUser = async (req, res) => {
 
         const user = await User.create({
             name,
-            email,
+            email: email.toLowerCase(),
             password: hashedPassword,
-            role,
+            role: targetRole,
             isActive: true
         });
 
@@ -59,7 +63,8 @@ const createUser = async (req, res) => {
                 id: user.id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                isActive: user.isActive
             }
         });
 
@@ -73,6 +78,86 @@ const createUser = async (req, res) => {
     }
 };
 
+const getUsers = async (req, res) => {
+    try {
+        const { search, role } = req.query;
+        const { Op } = require("sequelize");
+
+        const whereClause = {};
+
+        if (role && role !== "ALL") {
+            const filterRole = role === "PLACEMENT" ? "PLACEMENT_OFFICER" : role.toUpperCase();
+            whereClause.role = filterRole;
+        }
+
+        if (search && search.trim()) {
+            const searchTerm = `%${search.trim().toLowerCase()}%`;
+            whereClause[Op.or] = [
+                { name: { [Op.like]: searchTerm } },
+                { email: { [Op.like]: searchTerm } }
+            ];
+        }
+
+        const users = await User.findAll({
+            where: whereClause,
+            attributes: ["id", "name", "email", "registerNumber", "role", "isActive", "createdAt"],
+            order: [["createdAt", "DESC"]]
+        });
+
+        return res.json({
+            success: true,
+            users
+        });
+    } catch (error) {
+        console.error("Get users error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch users"
+        });
+    }
+};
+
+const toggleUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isActive } = req.body;
+
+        const user = await User.findByPk(id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        user.isActive = typeof isActive === "boolean" ? isActive : !user.isActive;
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: `User ${user.isActive ? "activated" : "deactivated"} successfully`,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isActive: user.isActive
+            }
+        });
+    } catch (error) {
+        console.error("Toggle user status error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to update user status"
+        });
+    }
+};
+
 module.exports = {
-    createUser
+    createUser,
+    getUsers,
+    toggleUserStatus
 };
