@@ -246,6 +246,27 @@ function AuthForm({
         />
       )}
 
+      {!isLogin && activeRole === "parent" && (
+        <>
+          <Field
+            icon={GraduationCap}
+            label="Child's name"
+            name="childName"
+            placeholder="e.g. Ananya Sharma"
+            value={form.childName}
+            onChange={onChange}
+          />
+          <Field
+            icon={Users}
+            label="Relationship"
+            name="relationship"
+            placeholder="e.g. Mother or Father"
+            value={form.relationship}
+            onChange={onChange}
+          />
+        </>
+      )}
+
       <Field
         icon={Mail}
         label={emailLabel}
@@ -314,6 +335,8 @@ function CampusOSAuth() {
     email: "",
     password: "",
     department: "",
+    childName: "",
+    relationship: "",
   });
 
   const currentRole =
@@ -340,6 +363,8 @@ function CampusOSAuth() {
             email: form.email.trim(),
             password: form.password,
             department: form.department.trim(),
+            childName: form.childName.trim(),
+            relationship: form.relationship.trim(),
           });
 
       setIsLoading(false);
