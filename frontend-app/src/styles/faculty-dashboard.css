@@ -92,8 +92,9 @@
 .faculty-stats strong { font-size: 28px; line-height: 1; }
 .faculty-stats span { margin-top: 7px; color: #d1fae5; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
 
-.faculty-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; margin-top: 20px; }
+.faculty-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; margin-top: 20px; align-items: start; }
 .faculty-console, .faculty-sidebar { display: grid; align-content: start; gap: 20px; }
+.faculty-console, .faculty-sidebar, .faculty-panel, .faculty-class-row > div { min-width: 0; }
 .faculty-alert { display: flex; gap: 12px; padding: 15px 17px; border: 1px solid #fecaca; border-radius: 16px; color: #991b1b; background: #fff5f5; }
 .faculty-alert svg { flex: 0 0 auto; color: #dc2626; }
 .faculty-alert strong { font-size: 13px; }
@@ -105,7 +106,7 @@
 .faculty-next-label { color: #059669; font-size: 11px; font-weight: 800; }
 .faculty-active-class { padding: 18px; border: 1px solid #86efac; border-radius: 16px; background: linear-gradient(135deg, #ecfdf5, #ffffff); }
 .faculty-class-status { color: #047857; font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }
-.faculty-class-row { justify-content: space-between; gap: 16px; }
+.faculty-class-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .faculty-class-row h3 { color: #16212b; font-size: 15px; }
 .faculty-class-row p { gap: 7px; margin-top: 8px; color: #64748b; font-size: 12px; }
 .faculty-class-row p span { margin-left: 9px; padding-left: 9px; border-left: 1px solid #cbd5e1; }
@@ -139,6 +140,11 @@
   .faculty-grid { grid-template-columns: 1fr; }
   .faculty-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
+@media (max-width: 1080px) and (min-width: 621px) {
+  .faculty-main { width: min(100% - 32px, 900px); }
+  .faculty-grid { grid-template-columns: 1fr; }
+  .faculty-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
 @media (max-width: 620px) {
   .faculty-header-inner, .faculty-main { width: min(100% - 28px, 560px); }
   .faculty-user-copy { display: none; }
@@ -149,4 +155,69 @@
   .faculty-class-row { align-items: flex-start; flex-direction: column; }
   .faculty-primary-action, .faculty-secondary-action { width: 100%; }
   .faculty-upcoming-class .faculty-secondary-action { width: auto; }
+}
+
+/* Override legacy faculty rules still present in the shared stylesheet. */
+.faculty-dashboard {
+  display: block !important;
+  min-height: 100vh !important;
+  background: radial-gradient(circle at 90% 0%, rgba(16, 185, 129, 0.1), transparent 28%), #f4f8f6 !important;
+  color: #17202b !important;
+}
+
+.faculty-dashboard .faculty-header {
+  width: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  position: static !important;
+  border: 0 !important;
+}
+
+.faculty-dashboard .faculty-sidebar {
+  position: static !important;
+  inset: auto !important;
+  width: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  display: grid !important;
+  flex-direction: initial !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.faculty-dashboard .faculty-main {
+  width: min(1180px, calc(100% - 40px)) !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+  padding: 28px 0 48px !important;
+}
+
+.faculty-dashboard .faculty-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 360px !important;
+  gap: 20px !important;
+}
+
+.faculty-dashboard .faculty-panel {
+  padding: 22px !important;
+  border: 1px solid #e2ebe6 !important;
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, .9) !important;
+  color: #17202b !important;
+}
+
+.faculty-dashboard .faculty-class-row {
+  display: flex !important;
+  align-items: center !important;
+}
+
+@media (max-width: 1080px) {
+  .faculty-dashboard .faculty-main { width: min(100% - 32px, 900px) !important; }
+  .faculty-dashboard .faculty-grid { grid-template-columns: 1fr !important; }
+  .faculty-dashboard .faculty-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+
+@media (max-width: 620px) {
+  .faculty-dashboard .faculty-main { width: min(100% - 28px, 560px) !important; padding-top: 18px !important; }
+  .faculty-dashboard .faculty-sidebar { grid-template-columns: 1fr !important; }
 }
