@@ -1,0 +1,673 @@
+/* =====================================================
+   ADMIN PULSE & WELLBEING DASHBOARD - CAMPUS OS
+   Exact match with Login Page Emerald & Slate Theme
+===================================================== */
+
+.admin-app {
+  min-height: 100vh;
+  width: 100%;
+  background:
+    radial-gradient(
+      circle at 16% 14%,
+      rgba(16, 185, 129, 0.16),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 88% 82%,
+      rgba(20, 184, 166, 0.13),
+      transparent 32%
+    ),
+    linear-gradient(135deg, #f8fbfa 0%, #eef7f4 100%);
+  color: #0f172a;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 24px 40px;
+  box-sizing: border-box;
+}
+
+.admin-shell {
+  max-width: 1340px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* =====================================================
+   1. HEADER
+===================================================== */
+.adm-header {
+  height: 72px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 20px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 24px rgba(13, 77, 63, 0.06);
+  position: sticky;
+  top: 16px;
+  z-index: 40;
+}
+
+.adm-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.adm-brand-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.25);
+}
+
+.adm-brand-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.4px;
+}
+
+.adm-brand-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.adm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.adm-live-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 750;
+  color: #047857;
+}
+
+.adm-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+}
+
+.adm-btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.adm-btn-secondary:hover {
+  background: #f8fafc;
+  color: #059669;
+  border-color: #86efac;
+}
+
+.adm-btn-logout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.adm-btn-logout:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* =====================================================
+   2. TOP WIDGETS ROW
+===================================================== */
+.adm-widgets-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.adm-widget-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 8px 24px rgba(13, 77, 63, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.adm-widget-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(13, 77, 63, 0.09);
+}
+
+.adm-widget-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.adm-widget-label {
+  font-size: 12px;
+  font-weight: 750;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.adm-widget-value {
+  font-size: 30px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+  margin: 0;
+}
+
+.adm-widget-value span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.adm-widget-value.amber {
+  color: #d97706;
+}
+
+.adm-widget-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.adm-widget-icon.emerald {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.adm-widget-icon.amber {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.adm-widget-icon.blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.adm-widget-footer {
+  margin-top: 14px;
+  font-size: 12px;
+  font-weight: 650;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adm-widget-footer.emerald {
+  color: #059669;
+}
+
+.adm-widget-footer.amber {
+  color: #d97706;
+}
+
+/* =====================================================
+   3. MAIN CONTENT SPLIT GRID
+===================================================== */
+.adm-split-grid {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.adm-panel {
+  background: #ffffff;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(13, 77, 63, 0.06);
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.adm-panel-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.adm-panel-desc {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.adm-badge-mint {
+  font-size: 11px;
+  font-weight: 800;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+/* Signal List */
+.adm-signals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adm-signal-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 16px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+
+.adm-signal-card:hover {
+  background: #f0fdf4;
+  border-color: #a7f3d0;
+}
+
+.adm-signal-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.adm-signal-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.adm-signal-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adm-signal-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.adm-signal-id {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+.adm-signal-alert {
+  font-size: 12px;
+  color: #475569;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adm-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.adm-dot.high {
+  background: #f59e0b;
+}
+
+.adm-dot.medium {
+  background: #eab308;
+}
+
+.adm-btn-checkin {
+  padding: 8px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.adm-btn-checkin:hover {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #86efac;
+}
+
+.adm-btn-view-all {
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.adm-btn-view-all:hover {
+  border-color: #10b981;
+  color: #059669;
+  background: #f0fdf4;
+}
+
+/* Incident Triage Timeline */
+.adm-timeline {
+  position: relative;
+  border-left: 2px solid #e2e8f0;
+  margin-left: 14px;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.adm-timeline-item {
+  position: relative;
+}
+
+.adm-timeline-dot {
+  position: absolute;
+  left: -32px;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.adm-timeline-dot.resolved {
+  background: #10b981;
+}
+
+.adm-timeline-dot.pending {
+  background: #cbd5e1;
+}
+
+.adm-cluster-tag {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #059669;
+  letter-spacing: 0.08em;
+  display: block;
+}
+
+.adm-cluster-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 3px 0 6px;
+}
+
+.adm-cluster-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adm-cluster-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.adm-cluster-badge.resolved {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.adm-cluster-badge.pending {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.adm-cluster-time {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* =====================================================
+   4. EMERGENCY BROADCAST
+===================================================== */
+.adm-broadcast-panel {
+  background: #ffffff;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(13, 77, 63, 0.06);
+}
+
+.adm-broadcast-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.adm-broadcast-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adm-broadcast-textarea {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.adm-broadcast-textarea:focus {
+  border-color: #10b981;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+}
+
+.adm-broadcast-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.adm-broadcast-toggles {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.adm-toggle-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.adm-toggle-pill.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+}
+
+.adm-toggle-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adm-toggle-pill.active .adm-toggle-box {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+.adm-btn-broadcast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 14px;
+  background: #059669;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(5, 150, 105, 0.3);
+  transition: all 0.2s ease;
+}
+
+.adm-btn-broadcast:hover {
+  background: #047857;
+  transform: translateY(-1px);
+}
+
+.adm-btn-broadcast:disabled {
+  background: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .adm-widgets-row {
+    grid-template-columns: 1fr;
+  }
+  .adm-split-grid {
+    grid-template-columns: 1fr;
+  }
+  .adm-header {
+    height: auto;
+    padding: 14px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .adm-header-actions {
+    justify-content: space-between;
+  }
+}
