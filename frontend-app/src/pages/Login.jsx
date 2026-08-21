@@ -56,6 +56,13 @@ const roles = [
   },
 ];
 
+const departments = [
+  "Computer Science Dept.",
+  "Information Technology Dept.",
+  "Electronics & Communication Dept.",
+  "Mechanical Engineering Dept.",
+];
+
 function BrandMark({ compact = false }) {
   return (
     <div className={compact ? "campus-mobile-brand" : "campus-auth-brand"}>
@@ -199,6 +206,22 @@ function Field({
   );
 }
 
+function DepartmentField({ value, onChange }) {
+  return (
+    <div className="campus-field">
+      <label htmlFor="department">Department</label>
+      <div className="campus-input-wrap campus-select-wrap">
+        <GraduationCap size={18} />
+        <select id="department" name="department" value={value} onChange={onChange} required>
+          {departments.map((department) => (
+            <option key={department} value={department}>{department}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
 function AuthForm({
   activeRole,
   isLogin,
@@ -222,7 +245,7 @@ function AuthForm({
       onSubmit={onSubmit}
       className="campus-auth-form"
     >
-      {!isLogin && (
+      {(!isLogin || activeRole === "student" || activeRole === "faculty") && (
         <Field
           icon={User}
           label="Full Name"
@@ -231,6 +254,10 @@ function AuthForm({
           value={form.name}
           onChange={onChange}
         />
+      )}
+
+      {(activeRole === "student" || activeRole === "faculty") && (
+        <DepartmentField value={form.department} onChange={onChange} />
       )}
 
       <Field
@@ -298,6 +325,7 @@ function CampusOSAuth() {
     name: "",
     email: "",
     password: "",
+    department: departments[0],
   });
 
   useEffect(() => {
@@ -319,6 +347,25 @@ function CampusOSAuth() {
     setIsLoading(true);
 
     window.setTimeout(() => {
+      const fallbackName = form.email.split("@")[0].replace(/[._-]+/g, " ");
+      const profile = {
+        name: form.name.trim() || fallbackName || "Campus User",
+        email: form.email.trim(),
+        role: activeRole,
+        department: form.department,
+      };
+
+      window.localStorage.setItem("campusUser", JSON.stringify(profile));
+
+      if (activeRole === "student") {
+        const savedStudents = JSON.parse(window.localStorage.getItem("campusStudents") || "[]");
+        const students = [
+          ...savedStudents.filter((student) => student.email !== profile.email),
+          profile,
+        ];
+        window.localStorage.setItem("campusStudents", JSON.stringify(students));
+      }
+
       setIsLoading(false);
       navigate(`/${activeRole}`);
     }, 700);
