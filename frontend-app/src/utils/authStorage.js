@@ -64,14 +64,9 @@ export function removeUser(userId) {
 function normalizeUser(user) {
   if (!user) return null;
 
-  let role = user.role?.toLowerCase();
-  if (role === "placement_officer") {
-    role = "placement";
-  }
-
   return {
     ...user,
-    role,
+    role: user.role?.toLowerCase(),
   };
 }
 

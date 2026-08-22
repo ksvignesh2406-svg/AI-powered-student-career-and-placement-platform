@@ -22,13 +22,10 @@ const createUser = async (req, res) => {
             "FACULTY",
             "PARENT",
             "SECURITY",
-            "PLACEMENT_OFFICER",
             "ADMIN"
         ];
 
-        const targetRole = role === "PLACEMENT" ? "PLACEMENT_OFFICER" : role;
-
-        if (!allowedRoles.includes(targetRole)) {
+        if (!allowedRoles.includes(role)) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid role"

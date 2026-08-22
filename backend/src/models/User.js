@@ -39,7 +39,6 @@ const User = sequelize.define(
                 "PARENT",
                 "ADMIN",
                 "PRINCIPAL",
-                "PLACEMENT_OFFICER",
                 "SECURITY"
             ),
             allowNull: false

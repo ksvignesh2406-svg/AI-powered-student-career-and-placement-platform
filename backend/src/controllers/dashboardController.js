@@ -267,75 +267,15 @@ const dashboardPayloads = {
             { id: "INC-302", title: "Lost ID Badge Resolved", reporter: "Hostel Warden", time: "1 hour ago", status: "Resolved" },
             { id: "INC-301", title: "Unauthorized Parking at Gate 2", reporter: "Guard Ramesh", time: "3 hours ago", status: "Cleared" }
         ]
-    },
-    PLACEMENT: {
-        summary: {
-            placementRate: "88.4%",
-            highestPackage: "44.5 LPA",
-            averagePackage: "9.2 LPA",
-            ongoingDrives: 3,
-            totalOffers: 342
-        },
-        drives: [
-            {
-                id: "DRV-01",
-                company: "Microsoft",
-                role: "Software Development Engineer",
-                ctc: "44.5 LPA",
-                date: "25 Aug 2026",
-                eligibleCount: 140,
-                registeredCount: 128,
-                stage: "Coding Assessment"
-            },
-            {
-                id: "DRV-02",
-                company: "Amazon",
-                role: "Cloud Support Associate / SDE",
-                ctc: "32.0 LPA",
-                date: "28 Aug 2026",
-                eligibleCount: 180,
-                registeredCount: 165,
-                stage: "Resume Shortlisting"
-            },
-            {
-                id: "DRV-03",
-                company: "Deloitte",
-                role: "Technology Consultant",
-                ctc: "12.5 LPA",
-                date: "02 Sep 2026",
-                eligibleCount: 310,
-                registeredCount: 290,
-                stage: "Applications Open"
-            }
-        ],
-        upcomingInterviews: [
-            { id: "INT-1", candidate: "Ananya Sharma", company: "Microsoft", role: "SDE 1", time: "Tomorrow, 10:00 AM", mode: "Technical Round 1" },
-            { id: "INT-2", candidate: "Rahul Nair", company: "Goldman Sachs", role: "Analyst", time: "Tomorrow, 11:30 AM", mode: "HR Round" },
-            { id: "INT-3", candidate: "Siddharth Jain", company: "Cisco", role: "Network Engineer", time: "Tomorrow, 02:00 PM", mode: "Technical Round 2" }
-        ],
-        topRecruiters: [
-            { name: "Google", hires: 14, avgCtc: "38 LPA" },
-            { name: "Microsoft", hires: 22, avgCtc: "42 LPA" },
-            { name: "Amazon", hires: 31, avgCtc: "30 LPA" },
-            { name: "Tata Consultancy Services", hires: 95, avgCtc: "7.5 LPA" }
-        ]
     }
-};
-
-const normalizeRole = (role) => {
-    if (!role) return "";
-    const upper = role.toUpperCase();
-    if (upper === "PLACEMENT_OFFICER") return "PLACEMENT";
-    return upper;
 };
 
 const getDashboard = async (req, res) => {
     try {
-        const rawRole = req.params.role;
-        const requestedRole = normalizeRole(rawRole);
-        const userRole = normalizeRole(req.user.role);
+        const requestedRole = (req.params.role || "").toUpperCase();
+        const userRole = (req.user.role || "").toUpperCase();
 
-        const allowedRoles = ["STUDENT", "FACULTY", "PARENT", "ADMIN", "SECURITY", "PLACEMENT"];
+        const allowedRoles = ["STUDENT", "FACULTY", "PARENT", "ADMIN", "SECURITY"];
 
         if (!allowedRoles.includes(requestedRole)) {
             return res.status(404).json({

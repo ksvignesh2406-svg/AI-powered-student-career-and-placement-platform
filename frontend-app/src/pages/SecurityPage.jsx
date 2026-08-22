@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
+import {
+  Check,
+  Map,
+  Moon,
+  Radio,
+  Shield,
+  ShieldAlert,
+  Terminal,
+  Users,
+  Video,
+} from "lucide-react";
 import { clearSession, getSessionUser } from "../utils/authStorage";
 
 import SecurityHeader from "../components/security/SecurityHeader";
@@ -12,6 +22,7 @@ import NightWalkPanel from "../components/security/NightWalkPanel";
 import GuardsOnDutyPanel from "../components/security/GuardsOnDutyPanel";
 import PublicAlertModal from "../components/security/PublicAlertModal";
 import SecurityCommandPanel from "../components/security/SecurityCommandPanel";
+import DashboardFeatureSidebar from "../components/common/DashboardFeatureSidebar";
 import "../styles/security-dashboard.css";
 
 const initialAlerts = [
@@ -122,8 +133,9 @@ export default function SecurityPage() {
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [audioMuted, setAudioMuted] = useState(false);
   const [mapMode, setMapMode] = useState("3D Campus");
+  const [layers, setLayers] = useState({ heatmap: true, patrols: true, cctv: false });
   const [notice, setNotice] = useState("");
-  const [layers, setLayers] = useState({ heatmap: true, patrols: false, cctv: false });
+  const [activeFeature, setActiveFeature] = useState("sos-triage");
 
   const flash = (msg) => {
     setNotice(msg);
@@ -204,12 +216,88 @@ export default function SecurityPage() {
   );
 
   const handleLayerChange = (layer, value) => {
-    setLayers((current) => ({ ...current, [layer]: typeof value === "boolean" ? value : !current[layer] }));
+    setLayers((current) => ({
+      ...current,
+      [layer]: typeof value === "boolean" ? value : !current[layer],
+    }));
   };
+
+  const securitySidebarItems = [
+    {
+      id: "sos-triage",
+      label: "SOS Emergency Triage",
+      icon: ShieldAlert,
+      badge: `${alerts.filter((a) => a.status === "Pending").length} Pending`,
+      badgeVariant:
+        alerts.filter((a) => a.status === "Pending").length > 0
+          ? "highlight"
+          : "emerald",
+      tooltip: "Active student distress signals and escort calls",
+      action: () => {
+        document.querySelector(".sec-alerts-panel")?.scrollIntoView({ behavior: "smooth" });
+      },
+    },
+    {
+      id: "spatial-map",
+      label: "3D Spatial Campus Map",
+      icon: Map,
+      badge: mapMode,
+      tooltip: "Interactive 3D building layout with incident heatmap",
+      action: () => {
+        document.querySelector(".sec-map-panel")?.scrollIntoView({ behavior: "smooth" });
+      },
+    },
+    {
+      id: "cctv",
+      label: "CCTV Telemetry Feeds",
+      icon: Video,
+      badge: layers.cctv ? "4 Live" : "Off",
+      badgeVariant: layers.cctv ? "emerald" : "",
+      tooltip: "Toggle active optical security feeds",
+      action: () => handleLayerChange("cctv", !layers.cctv),
+    },
+    {
+      id: "nightwalks",
+      label: "Night SafeWalk Monitor",
+      icon: Moon,
+      badge: `${nightWalks.length} Active`,
+      tooltip: "Live monitoring of student night escort timers",
+      action: () => {
+        document.querySelector(".sec-nightwalk-panel")?.scrollIntoView({ behavior: "smooth" });
+      },
+    },
+    {
+      id: "patrols",
+      label: "Guards & Patrol Zones",
+      icon: Users,
+      badge: `${guards.filter((g) => g.status === "On Duty").length} On Duty`,
+      tooltip: "Check patrol deployments, guard battery and zones",
+      action: () => {
+        document.querySelector(".sec-guards-panel")?.scrollIntoView({ behavior: "smooth" });
+      },
+    },
+    {
+      id: "broadcast",
+      label: "Public Safety Advisory",
+      icon: Radio,
+      tooltip: "Broadcast audible emergency siren or text alert to campus",
+      action: () => setIsBroadcastModalOpen(true),
+    },
+    {
+      id: "nexus-ai",
+      label: "Nexus Security AI",
+      icon: Terminal,
+      badge: "Ready",
+      tooltip: "Command-line AI tactical analysis and hazard routing",
+      action: () => {
+        document.querySelector(".sec-command-button")?.click();
+      },
+    },
+  ];
 
   return (
     <div className="security-app">
-      <div className="security-shell">
+      <div className="security-shell" style={{ maxWidth: "1400px" }}>
         {/* 1. TOP NAV BAR */}
         <SecurityHeader
           user={user}
@@ -236,36 +324,49 @@ export default function SecurityPage() {
           onAssignGuard={handleAssignGuard}
         />
 
-        {/* 4. THREE-COLUMN DASHBOARD GRID */}
-        <div className="sec-grid">
-          {/* LEFT PANEL: SAFETY ALERTS & REPORTS */}
-          <SafetyAlertsPanel
-            alerts={filteredAlerts}
-            filterPriority={filterPriority}
-            onFilterChange={setFilterPriority}
-            selectedAlert={selectedAlert}
-            onSelectAlert={setSelectedAlert}
+        {/* 4. SIDEBAR + THREE-COLUMN DASHBOARD GRID */}
+        <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", width: "100%" }}>
+          <DashboardFeatureSidebar
+            role="security"
+            kicker="Command Center"
+            title="Tactical Tools"
+            items={securitySidebarItems}
+            activeItem={activeFeature}
+            onSelectItem={setActiveFeature}
+            footerTitle="Perimeter Secure"
+            footerText="All 4 campus gate scanners operational"
           />
 
-          {/* CENTER PANEL: 3D CAMPUS MAP CONTAINER */}
-          <CampusMapPanel
-            mapMode={mapMode}
-            onMapModeChange={setMapMode}
-            selectedAlert={selectedAlert}
-            onAssignGuard={handleAssignGuard}
-            layers={layers}
-            focusIncident={selectedAlert?.id}
-          />
-
-          {/* RIGHT PANEL: NIGHT WALKS & GUARDS ON DUTY */}
-          <div className="sec-right-col">
-            <SecurityCommandPanel
-              layers={layers}
-              onLayerChange={handleLayerChange}
-              onFocusIncident={() => setSelectedAlert(initialAlerts[0])}
+          <div className="sec-grid" style={{ flex: 1, minWidth: 0 }}>
+            {/* LEFT PANEL: SAFETY ALERTS & REPORTS */}
+            <SafetyAlertsPanel
+              alerts={filteredAlerts}
+              filterPriority={filterPriority}
+              onFilterChange={setFilterPriority}
+              selectedAlert={selectedAlert}
+              onSelectAlert={setSelectedAlert}
             />
-            <NightWalkPanel nightWalks={nightWalks} />
-            <GuardsOnDutyPanel guards={guards} />
+
+            {/* CENTER PANEL: 3D CAMPUS MAP CONTAINER */}
+            <CampusMapPanel
+              mapMode={mapMode}
+              onMapModeChange={setMapMode}
+              selectedAlert={selectedAlert}
+              onAssignGuard={handleAssignGuard}
+              layers={layers}
+              focusIncident={selectedAlert?.id}
+            />
+
+            {/* RIGHT PANEL: NIGHT WALKS & GUARDS ON DUTY */}
+            <div className="sec-right-col">
+              <SecurityCommandPanel
+                layers={layers}
+                onLayerChange={handleLayerChange}
+                onFocusIncident={() => setSelectedAlert(initialAlerts[0])}
+              />
+              <NightWalkPanel nightWalks={nightWalks} />
+              <GuardsOnDutyPanel guards={guards} />
+            </div>
           </div>
         </div>
       </div>

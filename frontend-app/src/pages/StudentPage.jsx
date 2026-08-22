@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { fetchDashboard } from "../utils/dashboardApi";
 import { clearSession, getSessionUser } from "../utils/authStorage";
 import CampusHeatmap3D from "../components/CampusHeatmap3D";
+import DashboardFeatureSidebar from "../components/common/DashboardFeatureSidebar";
 import "../styles/student-dashboard.css";
 
 const containerVariants = {
@@ -130,7 +131,7 @@ function PerformanceRadar() {
   const values = performanceMetrics.map((metric, index) => point(index, metric.value)).join(" ");
 
   return (
-    <div className="student-performance">
+    <div className="student-performance" id="performance-radar-section">
       <div className="student-performance-heading">
         <div>
           <span>Performance map</span>
@@ -570,6 +571,7 @@ export default function StudentPage() {
   const [showNightWalk, setShowNightWalk] = useState(false);
   const [showCampusMap, setShowCampusMap] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeSidebarItem, setActiveSidebarItem] = useState("academic");
 
   useEffect(() => {
     if (!user || user.role !== "student") {
@@ -609,9 +611,78 @@ export default function StudentPage() {
   const nextClass =
     dashboard.summary?.nextClass || defaultDashboard.summary.nextClass;
 
+  const studentSidebarItems = [
+    {
+      id: "academic",
+      label: "Academic Snapshot",
+      icon: BookOpen,
+      badge: "82%",
+      tooltip: "Next class and attendance summary",
+      action: () => {
+        document.getElementById("academic-snapshot-section")?.scrollIntoView({ behavior: "smooth" });
+      },
+    },
+    {
+      id: "radar",
+      label: "Term Progress Radar",
+      icon: Sparkles,
+      tooltip: "Academic skill and performance map",
+      action: () => {
+        document.getElementById("performance-radar-section")?.scrollIntoView({ behavior: "smooth" });
+      },
+    },
+    {
+      id: "safepath",
+      label: "SafePath 3D Routing",
+      icon: Map,
+      badge: "3D Live",
+      tooltip: "Open 3D campus routing map",
+      action: () => setShowCampusMap(true),
+    },
+    {
+      id: "nightwalk",
+      label: "Night SafeWalk",
+      icon: Moon,
+      badge: "Timer",
+      tooltip: "Start companion safe walk timer",
+      action: () => setShowNightWalk(true),
+    },
+    {
+      id: "sos",
+      label: "Emergency SOS Beacon",
+      icon: ShieldAlert,
+      badge: isSOSActive ? "ACTIVE" : "Ready",
+      badgeVariant: isSOSActive ? "highlight" : "emerald",
+      tooltip: "Trigger campus security SOS alert",
+      action: () => setIsSOSActive((prev) => !prev),
+    },
+    {
+      id: "assistant",
+      label: "Campus Assistant AI",
+      icon: MessageSquare,
+      badge: "Online",
+      tooltip: "Ask Campus AI for routes, grades & study tips",
+      action: () => setIsChatOpen((prev) => !prev),
+    },
+    {
+      id: "digital-id",
+      label: "Digital ID & Gate Pass",
+      icon: QrCode,
+      tooltip: "Show Digital ID for Main Gate Scanner",
+      action: () => alert("Digital ID verified: Pass valid for Main Gate entry/exit."),
+    },
+    {
+      id: "report",
+      label: "Report Issue",
+      icon: AlertCircle,
+      tooltip: "Report safety or facility issue",
+      action: () => alert("Campus Facilities ticket window logged."),
+    },
+  ];
+
   return (
     <div className="student-app">
-      <div className="student-shell">
+      <div className="student-shell" style={{ maxWidth: "1280px" }}>
         <header className="student-header">
           <div className="student-brand">
             <div className="student-brand-icon">
@@ -645,118 +716,132 @@ export default function StudentPage() {
           </div>
         </header>
 
-        <motion.main
-          className="student-main"
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-        >
-          {error && <p className="student-dashboard-error">{error}</p>}
+        <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", width: "100%" }}>
+          <DashboardFeatureSidebar
+            role="student"
+            kicker="Student Hub"
+            title="Features & Tools"
+            items={studentSidebarItems}
+            activeItem={activeSidebarItem}
+            onSelectItem={setActiveSidebarItem}
+            footerTitle="Safety Beacon Active"
+            footerText="Connected to Campus Security Command"
+          />
 
-          <section className="student-safety-section">
-            <motion.div variants={itemVariants}>
-              <h1>
-                Welcome back, {user.name}{" "}
-                <span className="student-wave">👋</span>
-              </h1>
-              <p>Your campus snapshot for today.</p>
-            </motion.div>
-            <motion.div variants={itemVariants}>
-              <SwipeToSOS
-                isSOSActive={isSOSActive}
-                setIsSOSActive={setIsSOSActive}
-              />
-            </motion.div>
-            <motion.div className="student-safety-grid" variants={itemVariants}>
-              <button
-                className="student-safety-card night-walk-card"
-                type="button"
-                onClick={() => setShowNightWalk(true)}
-              >
-                <span className="student-card-icon">
-                  <Moon size={24} />
-                </span>
-                <span className="student-card-copy">
-                  <strong>Night Walk</strong>
-                  <small>Start timer</small>
-                </span>
-              </button>
-              <button
-                className="student-safety-card safepath-card"
-                type="button"
-                onClick={() => setShowCampusMap(true)}
-              >
-                <span className="student-card-icon">
-                  <Map size={24} />
-                </span>
-                <span className="student-card-copy">
-                  <strong>SafePath</strong>
-                  <small>Live 3D routing</small>
-                </span>
-              </button>
-            </motion.div>
-          </section>
+          <motion.main
+            className="student-main"
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            style={{ flex: 1, maxWidth: "100%", width: "100%" }}
+          >
+            {error && <p className="student-dashboard-error">{error}</p>}
 
-          <motion.section className="student-snapshot" variants={itemVariants}>
-            <h2>Academic Snapshot</h2>
-            <div className="student-next-class">
-              <div className="student-next-icon">
-                <BookOpen size={24} />
+            <section className="student-safety-section">
+              <motion.div variants={itemVariants}>
+                <h1>
+                  Welcome back, {user.name}{" "}
+                  <span className="student-wave">👋</span>
+                </h1>
+                <p>Your campus snapshot for today.</p>
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <SwipeToSOS
+                  isSOSActive={isSOSActive}
+                  setIsSOSActive={setIsSOSActive}
+                />
+              </motion.div>
+              <motion.div className="student-safety-grid" variants={itemVariants}>
+                <button
+                  className="student-safety-card night-walk-card"
+                  type="button"
+                  onClick={() => setShowNightWalk(true)}
+                >
+                  <span className="student-card-icon">
+                    <Moon size={24} />
+                  </span>
+                  <span className="student-card-copy">
+                    <strong>Night Walk</strong>
+                    <small>Start timer</small>
+                  </span>
+                </button>
+                <button
+                  className="student-safety-card safepath-card"
+                  type="button"
+                  onClick={() => setShowCampusMap(true)}
+                >
+                  <span className="student-card-icon">
+                    <Map size={24} />
+                  </span>
+                  <span className="student-card-copy">
+                    <strong>SafePath</strong>
+                    <small>Live 3D routing</small>
+                  </span>
+                </button>
+              </motion.div>
+            </section>
+
+            <motion.section className="student-snapshot" id="academic-snapshot-section" variants={itemVariants}>
+              <h2>Academic Snapshot</h2>
+              <div className="student-next-class">
+                <div className="student-next-icon">
+                  <BookOpen size={24} />
+                </div>
+                <div>
+                  <h3>{nextClass.title}</h3>
+                  <p>Starts in {nextClass.startsIn}</p>
+                  <span>
+                    <Map size={16} /> {nextClass.location}
+                  </span>
+                </div>
               </div>
-              <div>
-                <h3>{nextClass.title}</h3>
-                <p>Starts in {nextClass.startsIn}</p>
+              <div className="student-status-grid">
+                <div className="student-status-card">
+                  <span>Attendance</span>
+                  <div>
+                    <strong>{dashboard.summary.attendance.value}</strong>
+                    <b className="status-safe">
+                      {dashboard.summary.attendance.status}
+                    </b>
+                  </div>
+                </div>
+                <div className="student-status-card">
+                  <span>Pending Fees</span>
+                  <div>
+                    <strong>{dashboard.summary.fees.value}</strong>
+                    <b className="status-cleared">
+                      {dashboard.summary.fees.status}
+                    </b>
+                  </div>
+                </div>
+              </div>
+              <PerformanceRadar />
+            </motion.section>
+
+            <motion.section className="student-utilities" variants={itemVariants}>
+              <button type="button" onClick={() => alert("Campus Facilities ticket window logged.")}>
+                <span className="utility-icon issue-icon">
+                  <AlertCircle size={24} />
+                </span>
                 <span>
-                  <Map size={16} /> {nextClass.location}
+                  <strong>Report an Issue</strong>
+                  <small>Maintenance / Safety</small>
                 </span>
-              </div>
-            </div>
-            <div className="student-status-grid">
-              <div className="student-status-card">
-                <span>Attendance</span>
-                <div>
-                  <strong>{dashboard.summary.attendance.value}</strong>
-                  <b className="status-safe">
-                    {dashboard.summary.attendance.status}
-                  </b>
-                </div>
-              </div>
-              <div className="student-status-card">
-                <span>Pending Fees</span>
-                <div>
-                  <strong>{dashboard.summary.fees.value}</strong>
-                  <b className="status-cleared">
-                    {dashboard.summary.fees.status}
-                  </b>
-                </div>
-              </div>
-            </div>
-            <PerformanceRadar />
-          </motion.section>
-
-          <motion.section className="student-utilities" variants={itemVariants}>
-            <button type="button">
-              <span className="utility-icon issue-icon">
-                <AlertCircle size={24} />
-              </span>
-              <span>
-                <strong>Report an Issue</strong>
-                <small>Maintenance / Safety</small>
-              </span>
-              <ChevronRight size={20} />
-            </button>
-            <button type="button">
-              <span className="utility-icon id-icon">
-                <QrCode size={24} />
-              </span>
-              <span>
-                <strong>Digital ID</strong>
-                <small>Show at Main Gate</small>
-              </span>
-              <ChevronRight size={20} />
-            </button>
-          </motion.section>
-        </motion.main>
+                <ChevronRight size={20} />
+              </button>
+              <button type="button" onClick={() => alert("Digital ID verified for Main Gate Scanner.")}>
+                <span className="utility-icon id-icon">
+                  <QrCode size={24} />
+                </span>
+                <span>
+                  <strong>Digital ID</strong>
+                  <small>Show at Main Gate</small>
+                </span>
+                <ChevronRight size={20} />
+              </button>
+            </motion.section>
+          </motion.main>
+        </div>
 
         <ChatAssistant
           studentName={user.name}

@@ -1,0 +1,225 @@
+/* =====================================================
+   DASHBOARD FEATURE SIDEBAR - CAMPUS OS
+   Matching Emerald & Slate Glassmorphism Design
+===================================================== */
+
+.dashboard-feature-sidebar {
+  width: 260px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(16, 185, 129, 0.14);
+  border-radius: 20px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 10px 30px rgba(15, 118, 110, 0.06);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  position: sticky;
+  top: 96px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.dashboard-feature-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.dashboard-feature-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.25);
+  border-radius: 999px;
+}
+
+.sidebar-header {
+  padding: 4px 8px 10px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-heading-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-kicker {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #059669;
+}
+
+.sidebar-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.sidebar-live-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.sidebar-live-pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+  animation: sidebarPulse 2s infinite;
+}
+
+@keyframes sidebarPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}
+
+.sidebar-category-label {
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  padding: 8px 8px 4px;
+  margin: 0;
+}
+
+.sidebar-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.18s ease-in-out;
+  text-decoration: none;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(240, 253, 244, 0.9);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.18);
+  transform: translateX(2px);
+}
+
+.sidebar-nav-item.active {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.28);
+}
+
+.sidebar-nav-item.active .sidebar-icon-wrap {
+  color: #ffffff;
+}
+
+.sidebar-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  color: #059669;
+  flex-shrink: 0;
+  transition: color 0.18s ease;
+}
+
+.sidebar-nav-item.active .sidebar-icon-wrap {
+  color: #ffffff;
+}
+
+.sidebar-item-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.sidebar-badge.highlight {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.sidebar-badge.emerald {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.sidebar-nav-item.active .sidebar-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.sidebar-footer-card {
+  margin-top: auto;
+  padding: 12px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-footer-card strong {
+  font-size: 12px;
+  color: #065f46;
+  font-weight: 750;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-footer-card p {
+  font-size: 11px;
+  color: #047857;
+  margin: 0;
+  line-height: 1.35;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 1024px) {
+  .dashboard-feature-sidebar {
+    width: 100%;
+    position: static;
+    max-height: none;
+  }
+}

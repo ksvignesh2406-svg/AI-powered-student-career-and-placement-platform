@@ -50,14 +50,6 @@ const roles = [
       "Manage classes, attendance, academic workflows and student support signals.",
   },
   {
-    id: "placement",
-    label: "Placement",
-    icon: Award,
-    title: "Placement Cell",
-    description:
-      "Manage hiring drives, interview rounds, eligible candidate lists and corporate partnerships.",
-  },
-  {
     id: "parent",
     label: "Parent",
     icon: Users,
@@ -223,7 +215,7 @@ function AuthForm({
 
   return (
     <form onSubmit={onSubmit} className="campus-auth-form">
-      {!isLogin && ["admin", "security", "placement"].includes(activeRole) && (
+      {!isLogin && activeRole === "admin" && (
         <div
           style={{
             padding: "10px 14px",
@@ -235,7 +227,7 @@ function AuthForm({
             lineHeight: "1.4",
           }}
         >
-          ℹ️ <strong>Note:</strong> {activeRole.toUpperCase()} accounts are issued directly by
+          ℹ️ <strong>Note:</strong> ADMIN accounts are issued directly by
           Campus Administration. If you have an assigned account, please switch to <strong>Sign In</strong>.
         </div>
       )}
@@ -366,9 +358,9 @@ function CampusOSAuth() {
 
     setError("");
 
-    if (!isLogin && ["admin", "security", "placement"].includes(activeRole)) {
+    if (!isLogin && activeRole === "admin") {
       setError(
-        `${activeRole.charAt(0).toUpperCase() + activeRole.slice(1)} accounts cannot be registered publicly. Please contact Campus IT or Sign In.`
+        "Admin accounts cannot be registered publicly. Please contact Campus IT or Sign In."
       );
       return;
     }

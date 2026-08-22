@@ -24,7 +24,8 @@ const register = async (req, res) => {
         const allowedRoles = [
             "STUDENT",
             "FACULTY",
-            "PARENT"
+            "PARENT",
+            "SECURITY"
         ];
 
         if (!allowedRoles.includes(role)) {
@@ -161,14 +162,7 @@ const login = async (req, res) => {
         }
 
         // 5. Check selected role
-        const normalizeRole = (r) => {
-            if (!r) return "";
-            const upper = r.toUpperCase();
-            if (upper === "PLACEMENT" || upper === "PLACEMENT_OFFICER") return "PLACEMENT_OFFICER";
-            return upper;
-        };
-
-        if (normalizeRole(user.role) !== normalizeRole(role)) {
+        if (user.role?.toUpperCase() !== role?.toUpperCase()) {
             return res.status(401).json({
                 success: false,
                 message: "Invalid credentials or role"

@@ -200,7 +200,6 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
                 <option value="faculty">Faculty</option>
                 <option value="parent">Parent</option>
                 <option value="security">Security</option>
-                <option value="placement">Placement Officer</option>
                 <option value="admin">Admin</option>
               </select>
               <input
@@ -253,7 +252,7 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
           </div>
 
           <div className="adm-filter-pills">
-            {["all", "student", "faculty", "parent", "security", "placement", "admin"].map((r) => (
+            {["all", "student", "faculty", "parent", "security", "admin"].map((r) => (
               <button
                 key={r}
                 type="button"

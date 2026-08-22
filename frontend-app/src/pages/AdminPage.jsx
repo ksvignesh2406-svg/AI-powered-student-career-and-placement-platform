@@ -1,7 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Sparkles, Users, LogOut, Check } from "lucide-react";
+import {
+  Activity,
+  AlertOctagon,
+  Building2,
+  Check,
+  HeartPulse,
+  LogOut,
+  Radio,
+  Server,
+  Shield,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import { clearSession, getSessionUser, getUsers } from "../utils/authStorage";
 
 import PulseWidgets from "../components/admin/PulseWidgets";
@@ -9,6 +21,7 @@ import WellbeingSignals from "../components/admin/WellbeingSignals";
 import IncidentTriage from "../components/admin/IncidentTriage";
 import EmergencyBroadcast from "../components/admin/EmergencyBroadcast";
 import UserDirectoryModal from "../components/admin/UserDirectoryModal";
+import DashboardFeatureSidebar from "../components/common/DashboardFeatureSidebar";
 import "../styles/admin-dashboard.css";
 
 const containerVariants = {
@@ -40,6 +53,7 @@ export default function AdminPage() {
   const [notice, setNotice] = useState("");
   const [showDirectory, setShowDirectory] = useState(false);
   const [userCount, setUserCount] = useState(() => getUsers().length);
+  const [activeFeature, setActiveFeature] = useState("pulse");
 
   useEffect(() => {
     if (!user || (user.role !== "admin" && user.role !== "security")) {
@@ -58,6 +72,73 @@ export default function AdminPage() {
   };
 
   if (!user) return null;
+
+  const adminSidebarItems = [
+    {
+      id: "pulse",
+      label: "Campus Pulse & Stats",
+      icon: Activity,
+      badge: "Real-time",
+      tooltip: "Live occupancy, active faculty & security numbers",
+      action: () => {
+        document.querySelector(".adm-pulse-grid")?.scrollIntoView({ behavior: "smooth" });
+      },
+    },
+    {
+      id: "directory",
+      label: "User Directory Hub",
+      icon: Users,
+      badge: `${userCount} Users`,
+      tooltip: "Manage student, staff and security accounts",
+      action: () => setShowDirectory(true),
+    },
+    {
+      id: "wellbeing",
+      label: "Wellbeing Signals",
+      icon: HeartPulse,
+      badge: "8 High Risk",
+      badgeVariant: "highlight",
+      tooltip: "Mental wellbeing and stress radar for counselors",
+      action: () => {
+        document.querySelector(".adm-split-grid")?.scrollIntoView({ behavior: "smooth" });
+      },
+    },
+    {
+      id: "triage",
+      label: "AI Incident Triage",
+      icon: Shield,
+      badge: "3 Active",
+      tooltip: "Automated alert classification and guard dispatch",
+      action: () => {
+        document.querySelector(".adm-split-grid")?.scrollIntoView({ behavior: "smooth" });
+      },
+    },
+    {
+      id: "broadcast",
+      label: "Emergency Broadcast",
+      icon: Radio,
+      tooltip: "Push instant emergency sirens and SMS advisories",
+      action: () => {
+        document.querySelector(".adm-broadcast-card")?.scrollIntoView({ behavior: "smooth" });
+      },
+    },
+    {
+      id: "departments",
+      label: "Campus Departments",
+      icon: Building2,
+      tooltip: "View academic faculty distributions",
+      action: () => flash("6 Academic Departments Active · 42 Faculty Members"),
+    },
+    {
+      id: "telemetry",
+      label: "System Network Health",
+      icon: Server,
+      badge: "99.98%",
+      badgeVariant: "emerald",
+      tooltip: "Database connection, Redis cache and auth servers status",
+      action: () => flash("All 8 Campus OS server nodes operating optimally."),
+    },
+  ];
 
   return (
     <div className="admin-app">
@@ -101,31 +182,46 @@ export default function AdminPage() {
           </div>
         </header>
 
-        {/* 1. Top Row Widgets */}
-        <PulseWidgets itemVariants={itemVariants} />
-
-        {/* 2. Middle Row: Wellbeing Signals + AI Incident Triage */}
-        <motion.div
-          className="adm-split-grid"
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-        >
-          <WellbeingSignals
-            itemVariants={itemVariants}
-            onScheduleNotice={flash}
+        <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", width: "100%" }}>
+          <DashboardFeatureSidebar
+            role="admin"
+            kicker="Operations Center"
+            title="Admin Console"
+            items={adminSidebarItems}
+            activeItem={activeFeature}
+            onSelectItem={setActiveFeature}
+            footerTitle="Administrator Access"
+            footerText="Full administrative authorization"
           />
-          <IncidentTriage
-            itemVariants={itemVariants}
-            onDispatchNotice={flash}
-          />
-        </motion.div>
 
-        {/* 3. Bottom Section: Quick Emergency Broadcast */}
-        <EmergencyBroadcast
-          itemVariants={itemVariants}
-          onBroadcastNotice={flash}
-        />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
+            {/* 1. Top Row Widgets */}
+            <PulseWidgets itemVariants={itemVariants} />
+
+            {/* 2. Middle Row: Wellbeing Signals + AI Incident Triage */}
+            <motion.div
+              className="adm-split-grid"
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+            >
+              <WellbeingSignals
+                itemVariants={itemVariants}
+                onScheduleNotice={flash}
+              />
+              <IncidentTriage
+                itemVariants={itemVariants}
+                onDispatchNotice={flash}
+              />
+            </motion.div>
+
+            {/* 3. Bottom Section: Quick Emergency Broadcast */}
+            <EmergencyBroadcast
+              itemVariants={itemVariants}
+              onBroadcastNotice={flash}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Notice Toast */}
