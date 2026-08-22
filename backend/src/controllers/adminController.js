@@ -153,8 +153,38 @@ const toggleUserStatus = async (req, res) => {
     }
 };
 
+const deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const user = await User.findByPk(id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        await user.destroy();
+
+        return res.json({
+            success: true,
+            message: "User deleted successfully"
+        });
+    } catch (error) {
+        console.error("Delete user error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to delete user"
+        });
+    }
+};
+
 module.exports = {
     createUser,
     getUsers,
-    toggleUserStatus
+    toggleUserStatus,
+    deleteUser
 };

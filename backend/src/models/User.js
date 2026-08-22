@@ -47,6 +47,24 @@ const User = sequelize.define(
         isActive: {
             type: DataTypes.BOOLEAN,
             defaultValue: true
+        },
+
+        // NEW FIELDS FOR CONNECTIONS & ACADEMICS
+        linkedStudentId: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        facultyId: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        cgpa: {
+            type: DataTypes.FLOAT,
+            allowNull: true
+        },
+        attendance: {
+            type: DataTypes.FLOAT,
+            allowNull: true
         }
     },
     {
@@ -54,5 +72,10 @@ const User = sequelize.define(
         timestamps: true
     }
 );
+
+// Define associations
+User.belongsTo(User, { as: "LinkedStudent", foreignKey: "linkedStudentId" });
+User.belongsTo(User, { as: "Faculty", foreignKey: "facultyId" });
+User.hasMany(User, { as: "AssignedStudents", foreignKey: "facultyId" });
 
 module.exports = User;

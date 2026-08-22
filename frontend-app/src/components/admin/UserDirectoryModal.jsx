@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Download, Plus, Search, Trash2, X, Users, UserCheck } from "lucide-react";
 import { addUser, getUsers, removeUser, updateUser } from "../../utils/authStorage";
-import { fetchAdminUsers, createAdminUser, toggleUserStatus } from "../../utils/dashboardApi";
+import { fetchAdminUsers, createAdminUser, toggleUserStatus, deleteAdminUser } from "../../utils/dashboardApi";
 
 export default function UserDirectoryModal({ onClose, onNotice }) {
   const [users, setUsers] = useState(() => getUsers());
@@ -86,8 +86,18 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
     if (onNotice) onNotice(`Added ${result.user.name} to directory`);
   };
 
-  const handleRemove = (candidate) => {
+  const handleRemove = async (candidate) => {
     if (!window.confirm(`Remove ${candidate.name}'s account?`)) return;
+
+    // Try backend deletion first
+    const backendResult = await deleteAdminUser(candidate.id);
+    if (backendResult && !backendResult.error) {
+      if (onNotice) onNotice(`Removed ${candidate.name} from server`);
+      await loadFromBackend();
+      return;
+    }
+
+    // Fallback to local storage if backend fails or doesn't have the user
     removeUser(candidate.id);
     setUsers((prev) => prev.filter((u) => u.id !== candidate.id));
     if (onNotice) onNotice(`Removed ${candidate.name}`);

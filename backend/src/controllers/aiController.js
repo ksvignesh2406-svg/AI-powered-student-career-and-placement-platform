@@ -36,6 +36,26 @@ ${JSON.stringify(context || {})}
             }
         ];
 
+        if (!process.env.GROQ_API_KEY) {
+            const lastUserMsg = message.toLowerCase();
+            let mockResponse = "I am your AI Campus companion. (Mock Mode: Add GROQ_API_KEY in backend/.env for real AI)";
+
+            if (lastUserMsg.includes("attendance")) {
+                mockResponse = `Based on your context, attendance is ${context.attendance || "82%"}. Keep attending classes to maintain eligibility!`;
+            } else if (lastUserMsg.includes("exam") || lastUserMsg.includes("study") || lastUserMsg.includes("cgpa")) {
+                mockResponse = `Your current CGPA is ${context.cgpa || "N/A"}. Dedicating 20-30 minutes per day to self-study is highly recommended.`;
+            } else if (lastUserMsg.includes("mentor") || lastUserMsg.includes("teacher")) {
+                mockResponse = `Your assigned faculty mentor is ${context.mentor || "Unassigned"}. Feel free to reach out to them during office hours.`;
+            } else if (lastUserMsg.includes("route") || lastUserMsg.includes("safe") || lastUserMsg.includes("path")) {
+                mockResponse = "Safe path recommended: Take the main walkway via the Admin block. Avoid darker corridors near Block D.";
+            }
+
+            return res.status(200).json({
+                success: true,
+                response: mockResponse
+            });
+        }
+
         const response = await generateAIResponse(messages);
 
         return res.status(200).json({

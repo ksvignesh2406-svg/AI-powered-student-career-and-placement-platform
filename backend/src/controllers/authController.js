@@ -9,10 +9,10 @@ const register = async (req, res) => {
             email,
             registerNumber,
             password,
-            role
+            role,
+            studentRegisterNumber
         } = req.body;
 
-        // 1. Check required fields
         if (!name || !email || !password || !role) {
             return res.status(400).json({
                 success: false,
@@ -20,13 +20,7 @@ const register = async (req, res) => {
             });
         }
 
-        // 2. Only allow public registration for these roles
-        const allowedRoles = [
-            "STUDENT",
-            "FACULTY",
-            "PARENT",
-            "SECURITY"
-        ];
+        const allowedRoles = ["STUDENT", "FACULTY", "PARENT", "SECURITY"];
 
         if (!allowedRoles.includes(role)) {
             return res.status(403).json({
@@ -35,11 +29,8 @@ const register = async (req, res) => {
             });
         }
 
-        // 3. Check if email already exists
         const existingEmail = await User.findOne({
-            where: {
-                email: email.toLowerCase()
-            }
+            where: { email: email.toLowerCase() }
         });
 
         if (existingEmail) {
@@ -49,15 +40,10 @@ const register = async (req, res) => {
             });
         }
 
-        // 4. Check register number if provided
         if (registerNumber) {
-
             const existingRegisterNumber = await User.findOne({
-                where: {
-                    registerNumber: registerNumber
-                }
+                where: { registerNumber }
             });
-
             if (existingRegisterNumber) {
                 return res.status(409).json({
                     success: false,
@@ -66,30 +52,58 @@ const register = async (req, res) => {
             }
         }
 
-        // 5. Hash password
+        let linkedStudentId = null;
+        let facultyId = null;
+        let cgpa = null;
+        let attendance = null;
+
+        if (role === "PARENT") {
+            if (!studentRegisterNumber) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Child's Register Number is required for Parent accounts"
+                });
+            }
+            const linkedStudent = await User.findOne({
+                where: { registerNumber: studentRegisterNumber, role: "STUDENT" }
+            });
+            if (!linkedStudent) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Could not find a student with that register number"
+                });
+            }
+            linkedStudentId = linkedStudent.id;
+        } else if (role === "STUDENT") {
+            const faculties = await User.findAll({ where: { role: "FACULTY" } });
+            if (faculties.length > 0) {
+                const randomFaculty = faculties[Math.floor(Math.random() * faculties.length)];
+                facultyId = randomFaculty.id;
+            }
+            cgpa = parseFloat((Math.random() * (10.0 - 6.0) + 6.0).toFixed(2));
+            attendance = parseFloat((Math.random() * (100.0 - 70.0) + 70.0).toFixed(1));
+        }
+
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // 6. Create user
         const user = await User.create({
             name,
             email: email.toLowerCase(),
             registerNumber: registerNumber || null,
             password: hashedPassword,
-            role
+            role,
+            linkedStudentId,
+            facultyId,
+            cgpa,
+            attendance
         });
 
         const token = jwt.sign(
-            {
-                id: user.id,
-                role: user.role
-            },
+            { id: user.id, role: user.role },
             process.env.JWT_SECRET,
-            {
-                expiresIn: "1d"
-            }
+            { expiresIn: "1d" }
         );
 
-        // 7. Return response
         res.status(201).json({
             success: true,
             message: "User registered successfully",
@@ -104,9 +118,7 @@ const register = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error("Registration error:", error);
-
         res.status(500).json({
             success: false,
             message: "Server error during registration"

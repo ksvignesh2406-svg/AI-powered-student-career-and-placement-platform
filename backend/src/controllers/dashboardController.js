@@ -291,7 +291,13 @@ const getDashboard = async (req, res) => {
             });
         }
 
-        const user = await User.findByPk(req.user.id);
+        const user = await User.findByPk(req.user.id, {
+            include: [
+                { model: User, as: 'LinkedStudent' },
+                { model: User, as: 'Faculty' },
+                { model: User, as: 'AssignedStudents' }
+            ]
+        });
 
         if (!user || !user.isActive) {
             return res.status(404).json({
@@ -300,10 +306,50 @@ const getDashboard = async (req, res) => {
             });
         }
 
+        let payload = JSON.parse(JSON.stringify(dashboardPayloads[requestedRole]));
+
+        // Inject real connected data based on role
+        if (requestedRole === "STUDENT") {
+            const facultyName = user.Faculty ? user.Faculty.name : "Unassigned";
+            payload.summary.mentor = facultyName;
+            if (user.cgpa !== null) {
+                payload.summary.cgpa = user.cgpa;
+            }
+            if (user.attendance !== null) {
+                payload.summary.attendance.value = `${user.attendance}%`;
+            }
+        } 
+        else if (requestedRole === "PARENT") {
+            if (user.LinkedStudent) {
+                payload.child.name = user.LinkedStudent.name;
+                if (user.LinkedStudent.cgpa !== null) {
+                    payload.metrics.find(m => m.id === "gpa").value = user.LinkedStudent.cgpa.toString();
+                }
+                if (user.LinkedStudent.attendance !== null) {
+                    payload.metrics.find(m => m.id === "attendance").value = `${user.LinkedStudent.attendance}%`;
+                }
+            } else {
+                payload.child.name = "Unlinked Account";
+            }
+        } 
+        else if (requestedRole === "FACULTY") {
+            // Replace static classes/students with real assigned students
+            if (user.AssignedStudents && user.AssignedStudents.length > 0) {
+                payload.classes = user.AssignedStudents.map(student => ({
+                    id: student.id,
+                    title: `${student.name} (${student.registerNumber || "N/A"})`,
+                    time: "Mentee Session",
+                    location: `Performance: ${student.cgpa !== null ? student.cgpa.toString() : "N/A"} CGPA, ${student.attendance !== null ? student.attendance + "%" : "N/A"} Att.`,
+                    status: (student.attendance < 75 || student.cgpa < 7.0) ? "Needs Attention" : "Good Standing"
+                }));
+                payload.summary.classesToday = payload.classes.length;
+            }
+        }
+
         return res.json({
             success: true,
             user: buildUserProfile(user),
-            dashboard: dashboardPayloads[requestedRole]
+            dashboard: payload
         });
     } catch (error) {
         console.error("Dashboard error:", error);

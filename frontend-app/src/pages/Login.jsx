@@ -243,6 +243,17 @@ function AuthForm({
         />
       )}
 
+      {!isLogin && activeRole === "student" && (
+        <Field
+          icon={GraduationCap}
+          label="Register Number"
+          name="registerNumber"
+          placeholder="e.g. 26BCE1123"
+          value={form.registerNumber || ""}
+          onChange={onChange}
+        />
+      )}
+
       {!isLogin && activeRole === "faculty" && (
         <Field
           icon={Briefcase}
@@ -258,18 +269,10 @@ function AuthForm({
         <>
           <Field
             icon={GraduationCap}
-            label="Child's name"
-            name="childName"
-            placeholder="e.g. Ananya Sharma"
-            value={form.childName}
-            onChange={onChange}
-          />
-          <Field
-            icon={Users}
-            label="Relationship"
-            name="relationship"
-            placeholder="e.g. Mother or Father"
-            value={form.relationship}
+            label="Child's Register Number"
+            name="studentRegisterNumber"
+            placeholder="e.g. 26BCE1123"
+            value={form.studentRegisterNumber || ""}
             onChange={onChange}
           />
         </>
@@ -371,12 +374,12 @@ function CampusOSAuth() {
       ? await signInUser(activeRole, form.email.trim(), form.password)
       : await registerUser({
           role: activeRole,
-          name: form.name.trim(),
-          email: form.email.trim(),
+          name: form.name?.trim(),
+          email: form.email?.trim(),
           password: form.password,
-          department: form.department.trim(),
-          childName: form.childName.trim(),
-          relationship: form.relationship.trim(),
+          department: form.department?.trim(),
+          studentRegisterNumber: form.studentRegisterNumber?.trim(),
+          registerNumber: form.registerNumber?.trim(),
         });
 
     setIsLoading(false);
