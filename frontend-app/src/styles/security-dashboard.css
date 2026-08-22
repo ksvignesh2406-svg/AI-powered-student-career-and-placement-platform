@@ -608,6 +608,55 @@
   padding: 20px;
 }
 
+.sec-map-heatmap {
+  position: absolute;
+  inset: 0;
+}
+
+.campus-heatmap,
+.campus-heatmap canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.campus-heatmap-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle, transparent 45%, rgba(2, 12, 20, 0.36) 100%);
+}
+
+.sec-map-status {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 12px;
+  color: #d1fae5;
+  background: rgba(3, 20, 28, 0.8);
+  border: 1px solid rgba(45, 212, 191, 0.4);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+}
+
+.sec-map-status strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sec-map-status span {
+  color: #99f6e4;
+  font-size: 10px;
+}
+
 .sec-map-canvas::before {
   content: "";
   position: absolute;
@@ -724,6 +773,35 @@
   box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
   white-space: nowrap;
 }
+
+.sec-command-stack { display: flex; flex-direction: column; gap: 12px; }
+.sec-command-panel, .sec-cctv-panel { padding: 14px; color: #cbd5e1; background: #07131b; border: 1px solid rgba(45, 212, 191, .22); border-radius: 16px; box-shadow: 0 12px 28px rgba(2, 12, 20, .12); }
+.sec-command-title { display: flex; align-items: center; gap: 7px; margin-bottom: 11px; color: #99f6e4; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.sec-command-live { margin-left: auto; padding: 2px 6px; color: #34d399; background: rgba(52, 211, 153, .1); border: 1px solid rgba(52, 211, 153, .25); border-radius: 999px; font-size: 8px; }
+.sec-layer-toggle { display: flex; align-items: center; justify-content: space-between; min-height: 30px; color: #94a3b8; font-size: 11px; cursor: pointer; }
+.sec-layer-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.sec-layer-toggle i { position: relative; width: 30px; height: 16px; background: #334155; border-radius: 999px; transition: background .2s; }
+.sec-layer-toggle i::after { position: absolute; top: 3px; left: 3px; width: 10px; height: 10px; background: #cbd5e1; border-radius: 50%; content: ""; transition: transform .2s; }
+.sec-layer-toggle input:checked + i { background: #059669; box-shadow: 0 0 10px rgba(16, 185, 129, .35); }
+.sec-layer-toggle input:checked + i::after { transform: translateX(14px); background: #ecfdf5; }
+.sec-cctv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.sec-cctv-feed { position: relative; min-height: 58px; overflow: hidden; background: #020617; border: 1px solid rgba(255,255,255,.12); border-radius: 7px; }
+.sec-cctv-image { position: absolute; inset: 0; background: linear-gradient(135deg, #17384b, #020617 65%, #14532d); opacity: .75; animation: sec-cctv-pan 9s ease-in-out infinite alternate; }
+.sec-cctv-image.red { background: linear-gradient(135deg, #451a24, #020617 60%, #7f1d1d); }
+.sec-cctv-image.amber { background: linear-gradient(135deg, #443112, #020617 65%, #854d0e); }
+.sec-cctv-image.emerald { background: linear-gradient(135deg, #123b36, #020617 65%, #166534); }
+.sec-cctv-scanlines { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.07) 4px); pointer-events: none; }
+.sec-cctv-rec, .sec-cctv-time, .sec-cctv-label { position: absolute; z-index: 1; color: #e2e8f0; font-family: monospace; font-size: 8px; }
+.sec-cctv-rec { top: 5px; left: 5px; color: #f87171; }.sec-cctv-rec b { display: inline-block; width: 5px; height: 5px; margin-right: 3px; background: #ef4444; border-radius: 50%; animation: sec-cctv-blink 1s infinite; }
+.sec-cctv-time { top: 5px; right: 5px; color: #a7f3d0; }.sec-cctv-label { right: 5px; bottom: 5px; left: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec-cctv-enable { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; padding: 9px; color: #5eead4; background: rgba(20, 184, 166, .08); border: 1px dashed rgba(45, 212, 191, .35); border-radius: 8px; font-size: 10px; cursor: pointer; }
+.sec-command-ai { position: relative; z-index: 5; }
+.sec-command-button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; color: #5eead4; background: #061117; border: 1px solid rgba(16, 185, 129, .35); border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; }.sec-command-button svg:last-child { margin-left: auto; }
+.sec-command-chat { position: absolute; right: 0; bottom: 46px; width: min(300px, calc(100vw - 40px)); overflow: hidden; background: rgba(2, 12, 20, .97); border: 1px solid rgba(16, 185, 129, .35); border-radius: 13px; box-shadow: 0 20px 40px rgba(2, 12, 20, .3); }
+.sec-chat-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; color: #a7f3d0; border-bottom: 1px solid rgba(255,255,255,.1); font-family: monospace; font-size: 10px; }.sec-chat-header span { display: flex; align-items: center; gap: 6px; }.sec-chat-header button { color: #94a3b8; background: none; border: 0; cursor: pointer; }
+.sec-chat-messages { display: flex; flex-direction: column; gap: 7px; max-height: 210px; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 10px; line-height: 1.4; }.sec-chat-messages p { margin: 0; padding: 7px; border-radius: 5px; }.sec-chat-messages .system { color: #6ee7b7; background: rgba(16, 185, 129, .08); }.sec-chat-messages .user { color: #cbd5e1; background: rgba(255,255,255,.06); }
+.sec-command-chat form { display: flex; gap: 6px; padding: 8px; border-top: 1px solid rgba(255,255,255,.1); }.sec-command-chat input { min-width: 0; flex: 1; padding: 7px; color: #d1fae5; background: #020617; border: 1px solid rgba(16, 185, 129, .25); border-radius: 5px; outline: none; font-family: monospace; font-size: 10px; }.sec-command-chat form button { display: flex; align-items: center; justify-content: center; padding: 7px; color: white; background: #059669; border: 0; border-radius: 5px; cursor: pointer; }
+@keyframes sec-cctv-pan { from { transform: scale(1.05) translateX(-2%); } to { transform: scale(1.12) translateX(3%); } } @keyframes sec-cctv-blink { 50% { opacity: .2; } }
 
 /* =====================================================
    6. RIGHT COLUMN - NIGHT WALKS & GUARDS

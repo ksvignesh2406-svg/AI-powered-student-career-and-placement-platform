@@ -1,10 +1,13 @@
 import { Compass, Loader2, MapPin, UserCheck } from "lucide-react";
+import CampusHeatmap3D from "../CampusHeatmap3D";
 
 export default function CampusMapPanel({
   mapMode,
   onMapModeChange,
   selectedAlert,
   onAssignGuard,
+  layers,
+  focusIncident,
 }) {
   return (
     <div className="sec-map-panel">
@@ -31,19 +34,10 @@ export default function CampusMapPanel({
 
       {/* Light Map Canvas Area */}
       <div className="sec-map-canvas">
-        <div className="sec-map-icon-box">
-          <Compass size={32} />
-        </div>
-
-        <div className="sec-map-badge">
-          <strong>
-            <Loader2 size={14} className="animate-spin" />
-            Initializing {mapMode} Grid
-          </strong>
-          <p>
-            Spatial camera &amp; live hostel pins with active illuminated night
-            walk paths.
-          </p>
+        <CampusHeatmap3D className="sec-map-heatmap" layers={layers} focusIncident={focusIncident} />
+        <div className="sec-map-status">
+          <strong><Loader2 size={14} className="animate-spin" /> {mapMode} Grid Online</strong>
+          <span>Live incident telemetry · {new Date().toLocaleTimeString()}</span>
         </div>
       </div>
 

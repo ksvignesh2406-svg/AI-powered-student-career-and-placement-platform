@@ -20,6 +20,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { fetchDashboard } from "../utils/dashboardApi";
 import { clearSession, getSessionUser } from "../utils/authStorage";
+import CampusHeatmap3D from "../components/CampusHeatmap3D";
 import "../styles/student-dashboard.css";
 
 const containerVariants = {
@@ -57,6 +58,57 @@ const defaultDashboard = {
       "I noticed you have Data Structures in 15 mins at Block B. Need the fastest route avoiding the ongoing construction near the library?",
   },
 };
+
+const ROUTE_GRAPH = {
+  "Main Gate": { "Student Center": 8, Library: 13 },
+  "Student Center": { "Main Gate": 8, Library: 7, "Science Block": 8, "Dorm A": 6 },
+  Library: { "Main Gate": 13, "Student Center": 7, "Science Block": 9 },
+  "Science Block": { "Student Center": 8, Library: 9, "Dorm A": 12, Parking: 10 },
+  "Dorm A": { "Student Center": 6, "Science Block": 12, Parking: 8 },
+  Parking: { "Science Block": 10, "Dorm A": 8 },
+};
+
+const ROUTE_POINTS = {
+  "Main Gate": [0, -15],
+  "Student Center": [0, 2],
+  Library: [4, -3],
+  "Science Block": [6, 5],
+  "Dorm A": [-6, 6],
+  Parking: [15, 10],
+};
+
+const ROUTE_INCIDENTS = [
+  { id: "INC-001", x: -5.5, z: 6.5, intensity: 3.6, type: "Unauthorized Access", location: "Dorm A" },
+  { id: "INC-002", x: 3, z: -2, intensity: 1.8, type: "Motion Sensor", location: "Library" },
+];
+
+function calculateSafeRoute(start, end, incidents) {
+  const distances = Object.fromEntries(Object.keys(ROUTE_GRAPH).map((node) => [node, Infinity]));
+  const previous = {};
+  const queue = [{ node: start, distance: 0 }];
+  distances[start] = 0;
+  while (queue.length) {
+    queue.sort((a, b) => a.distance - b.distance);
+    const current = queue.shift();
+    if (current.node === end) break;
+    Object.entries(ROUTE_GRAPH[current.node] || {}).forEach(([neighbor, baseDistance]) => {
+      const incident = incidents.find((item) => item.location === neighbor && item.active !== false);
+      const nextDistance = current.distance + baseDistance + (incident ? incident.intensity * 50 : 0);
+      if (nextDistance < distances[neighbor]) {
+        distances[neighbor] = nextDistance;
+        previous[neighbor] = current.node;
+        queue.push({ node: neighbor, distance: nextDistance });
+      }
+    });
+  }
+  const path = [];
+  let current = end;
+  while (current) {
+    path.unshift(current);
+    current = previous[current];
+  }
+  return path.length > 1 && path[0] === start ? path : [];
+}
 
 const performanceMetrics = [
   { label: "Attendance", value: 82 },
@@ -253,8 +305,19 @@ function ChatAssistant({ studentName, greeting, isChatOpen, setIsChatOpen }) {
         answer = data.choices?.[0]?.message?.content || data.message || data.response;
         if (!answer) throw new Error("AI response was empty");
       } else {
-        answer =
-          "Your strongest area is projects at 88%. Try a short exam revision session next; exams are currently your biggest opportunity at 71%.";
+        const normalizedPrompt = prompt.toLowerCase();
+        if (normalizedPrompt.includes("ghost") || normalizedPrompt.includes("timer")) {
+          answer =
+            "There are 2 active night-walk timers. One escort is delayed near the Science Block and security has been notified.";
+        } else if (normalizedPrompt.includes("route") || normalizedPrompt.includes("safepath")) {
+          const route = calculateSafeRoute("Main Gate", "Dorm A", ROUTE_INCIDENTS);
+          answer = `SafePath calculated around active incidents: ${route.join(
+            " -> "
+          )}. Open SafePath to view the route on the 3D map.`;
+        } else {
+          answer =
+            "Your strongest area is projects at 88%. Try a short exam revision session next; exams are currently your biggest opportunity at 71%.";
+        }
       }
       setMessages((current) => [...current, { role: "assistant", text: answer }]);
     } catch {
@@ -406,6 +469,98 @@ function NightWalkModal({ onClose }) {
   );
 }
 
+function StudentCampusMapModal({ onClose }) {
+  const [start, setStart] = useState("Main Gate");
+  const [end, setEnd] = useState("Dorm A");
+  const [activeIncidentId, setActiveIncidentId] = useState(null);
+  const route = calculateSafeRoute(start, end, ROUTE_INCIDENTS);
+  const routePath = route.map((node) => ROUTE_POINTS[node]);
+  const selectedIncident = ROUTE_INCIDENTS.find(
+    (incident) => incident.id === activeIncidentId
+  );
+
+  return (
+    <motion.div
+      className="student-map-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="student-map-modal"
+        initial={{ y: 24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 24, opacity: 0 }}
+      >
+        <div className="student-map-modal-header">
+          <div>
+            <span>SafePath / Nexus Routing</span>
+            <h2>Live campus 3D map</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close campus map"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="student-map-route-controls">
+          <label>
+            From
+            <select
+              value={start}
+              onChange={(event) => setStart(event.target.value)}
+            >
+              {Object.keys(ROUTE_POINTS).map((node) => (
+                <option key={node}>{node}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            To
+            <select
+              value={end}
+              onChange={(event) => setEnd(event.target.value)}
+            >
+              {Object.keys(ROUTE_POINTS).map((node) => (
+                <option key={node}>{node}</option>
+              ))}
+            </select>
+          </label>
+          <div className="student-route-result">
+            <strong>
+              {route.length ? route.join(" -> ") : "No safe route found"}
+            </strong>
+            <span>
+              {selectedIncident
+                ? `${selectedIncident.type} selected`
+                : "Route avoids active incident zones"}
+            </span>
+          </div>
+        </div>
+        <div className="student-map-viewport">
+          <CampusHeatmap3D
+            incidents={ROUTE_INCIDENTS}
+            activeIncidentId={activeIncidentId}
+            onIncidentSelect={setActiveIncidentId}
+            routePath={routePath}
+          />
+        </div>
+        <div className="student-map-footer">
+          <span>
+            <b /> Campus grid online
+          </span>
+          <span>
+            {ROUTE_INCIDENTS.length} active safety signals · click a marker for
+            details
+          </span>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function StudentPage() {
   const navigate = useNavigate();
   const [user, setUser] = useState(() => getSessionUser());
@@ -413,6 +568,7 @@ export default function StudentPage() {
   const [error, setError] = useState("");
   const [isSOSActive, setIsSOSActive] = useState(false);
   const [showNightWalk, setShowNightWalk] = useState(false);
+  const [showCampusMap, setShowCampusMap] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
@@ -450,7 +606,8 @@ export default function StudentPage() {
 
   if (!user) return null;
 
-  const nextClass = dashboard.summary?.nextClass || defaultDashboard.summary.nextClass;
+  const nextClass =
+    dashboard.summary?.nextClass || defaultDashboard.summary.nextClass;
 
   return (
     <div className="student-app">
@@ -527,13 +684,14 @@ export default function StudentPage() {
               <button
                 className="student-safety-card safepath-card"
                 type="button"
+                onClick={() => setShowCampusMap(true)}
               >
                 <span className="student-card-icon">
                   <Map size={24} />
                 </span>
                 <span className="student-card-copy">
                   <strong>SafePath</strong>
-                  <small>Live routing</small>
+                  <small>Live 3D routing</small>
                 </span>
               </button>
             </motion.div>
@@ -610,6 +768,9 @@ export default function StudentPage() {
         <AnimatePresence>
           {showNightWalk && (
             <NightWalkModal onClose={() => setShowNightWalk(false)} />
+          )}
+          {showCampusMap && (
+            <StudentCampusMapModal onClose={() => setShowCampusMap(false)} />
           )}
         </AnimatePresence>
       </div>
