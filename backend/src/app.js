@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-
+const aiRoutes = require("./routes/aiRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const authRoutes = require("./routes/authRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
@@ -22,5 +22,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);
+
+app.use("/api/ai", aiRoutes);
 
 module.exports = app;

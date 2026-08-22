@@ -163,3 +163,47 @@ export async function deleteAdminUser(userId) {
     }
 }
 
+export async function askCampusAI(message, context = {}) {
+    const token = getToken();
+
+    if (!token) {
+        return {
+            error: "Please sign in again."
+        };
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/ai/analyze`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                message,
+                context
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.status === 401) {
+            clearSession();
+        }
+
+        if (!response.ok) {
+            return {
+                error: data.message || "AI request failed."
+            };
+        }
+
+        return data;
+
+    } catch (error) {
+        console.error("Campus AI error:", error);
+
+        return {
+            error: "Unable to connect to Campus AI."
+        };
+    }
+}
