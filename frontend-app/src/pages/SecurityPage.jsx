@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  ArrowLeft,
   Check,
   Map,
   Moon,
   Radio,
   Shield,
   ShieldAlert,
+  Sparkles,
   Terminal,
   Users,
   Video,
@@ -135,7 +137,7 @@ export default function SecurityPage() {
   const [mapMode, setMapMode] = useState("3D Campus");
   const [layers, setLayers] = useState({ heatmap: true, patrols: true, cctv: false });
   const [notice, setNotice] = useState("");
-  const [activeFeature, setActiveFeature] = useState("sos-triage");
+  const [activeTab, setActiveTab] = useState("overview");
 
   const flash = (msg) => {
     setNotice(msg);
@@ -148,14 +150,12 @@ export default function SecurityPage() {
     }
   }, [navigate, user]);
 
-  // Live Clock Ticker
   useEffect(() => {
     setTime(new Date());
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Countdown timers for Night Walks
   useEffect(() => {
     const timer = setInterval(() => {
       setNightWalks((prev) =>
@@ -224,7 +224,13 @@ export default function SecurityPage() {
 
   const securitySidebarItems = [
     {
-      id: "sos-triage",
+      id: "overview",
+      label: "Home Overview",
+      icon: Sparkles,
+      tooltip: "Command summary & active operations",
+    },
+    {
+      id: "triage",
       label: "SOS Emergency Triage",
       icon: ShieldAlert,
       badge: `${alerts.filter((a) => a.status === "Pending").length} Pending`,
@@ -233,38 +239,28 @@ export default function SecurityPage() {
           ? "highlight"
           : "emerald",
       tooltip: "Active student distress signals and escort calls",
-      action: () => {
-        document.querySelector(".sec-alerts-panel")?.scrollIntoView({ behavior: "smooth" });
-      },
     },
     {
-      id: "spatial-map",
+      id: "map",
       label: "3D Spatial Campus Map",
       icon: Map,
       badge: mapMode,
       tooltip: "Interactive 3D building layout with incident heatmap",
-      action: () => {
-        document.querySelector(".sec-map-panel")?.scrollIntoView({ behavior: "smooth" });
-      },
     },
     {
       id: "cctv",
       label: "CCTV Telemetry Feeds",
       icon: Video,
-      badge: layers.cctv ? "4 Live" : "Off",
+      badge: layers.cctv ? "4 Live" : "Standby",
       badgeVariant: layers.cctv ? "emerald" : "",
-      tooltip: "Toggle active optical security feeds",
-      action: () => handleLayerChange("cctv", !layers.cctv),
+      tooltip: "Active optical security feeds",
     },
     {
-      id: "nightwalks",
+      id: "nightwalk",
       label: "Night SafeWalk Monitor",
       icon: Moon,
       badge: `${nightWalks.length} Active`,
       tooltip: "Live monitoring of student night escort timers",
-      action: () => {
-        document.querySelector(".sec-nightwalk-panel")?.scrollIntoView({ behavior: "smooth" });
-      },
     },
     {
       id: "patrols",
@@ -272,9 +268,6 @@ export default function SecurityPage() {
       icon: Users,
       badge: `${guards.filter((g) => g.status === "On Duty").length} On Duty`,
       tooltip: "Check patrol deployments, guard battery and zones",
-      action: () => {
-        document.querySelector(".sec-guards-panel")?.scrollIntoView({ behavior: "smooth" });
-      },
     },
     {
       id: "broadcast",
@@ -284,14 +277,11 @@ export default function SecurityPage() {
       action: () => setIsBroadcastModalOpen(true),
     },
     {
-      id: "nexus-ai",
+      id: "nexus",
       label: "Nexus Security AI",
       icon: Terminal,
       badge: "Ready",
       tooltip: "Command-line AI tactical analysis and hazard routing",
-      action: () => {
-        document.querySelector(".sec-command-button")?.click();
-      },
     },
   ];
 
@@ -324,49 +314,209 @@ export default function SecurityPage() {
           onAssignGuard={handleAssignGuard}
         />
 
-        {/* 4. SIDEBAR + THREE-COLUMN DASHBOARD GRID */}
-        <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", width: "100%" }}>
+        {/* 4. SIDEBAR + DYNAMIC VIEW WORKSPACE */}
+        <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", width: "100%", marginTop: "24px" }}>
+          {/* Feature Sidebar */}
           <DashboardFeatureSidebar
             role="security"
             kicker="Command Center"
             title="Tactical Tools"
             items={securitySidebarItems}
-            activeItem={activeFeature}
-            onSelectItem={setActiveFeature}
+            activeItem={activeTab}
+            onSelectItem={setActiveTab}
             footerTitle="Perimeter Secure"
             footerText="All 4 campus gate scanners operational"
           />
 
-          <div className="sec-grid" style={{ flex: 1, minWidth: 0 }}>
-            {/* LEFT PANEL: SAFETY ALERTS & REPORTS */}
-            <SafetyAlertsPanel
-              alerts={filteredAlerts}
-              filterPriority={filterPriority}
-              onFilterChange={setFilterPriority}
-              selectedAlert={selectedAlert}
-              onSelectAlert={setSelectedAlert}
-            />
+          {/* Dynamic Main Workspace */}
+          <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
+            {/* VIEW: OVERVIEW (HOME) */}
+            {activeTab === "overview" && (
+              <div className="sec-grid" style={{ margin: 0 }}>
+                <SafetyAlertsPanel
+                  alerts={filteredAlerts}
+                  filterPriority={filterPriority}
+                  onFilterChange={setFilterPriority}
+                  selectedAlert={selectedAlert}
+                  onSelectAlert={setSelectedAlert}
+                />
+                <CampusMapPanel
+                  mapMode={mapMode}
+                  onMapModeChange={setMapMode}
+                  selectedAlert={selectedAlert}
+                  onAssignGuard={handleAssignGuard}
+                  layers={layers}
+                  focusIncident={selectedAlert?.id}
+                />
+                <div className="sec-right-col">
+                  <NightWalkPanel nightWalks={nightWalks} />
+                  <GuardsOnDutyPanel guards={guards} />
+                </div>
+              </div>
+            )}
 
-            {/* CENTER PANEL: 3D CAMPUS MAP CONTAINER */}
-            <CampusMapPanel
-              mapMode={mapMode}
-              onMapModeChange={setMapMode}
-              selectedAlert={selectedAlert}
-              onAssignGuard={handleAssignGuard}
-              layers={layers}
-              focusIncident={selectedAlert?.id}
-            />
+            {/* VIEW: EMERGENCY TRIAGE */}
+            {activeTab === "triage" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <ShieldAlert size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">Emergency SOS &amp; Incident Triage Queue</h2>
+                      <p className="dashboard-view-subtitle">Live dispatcher queue for escort calls and distress signals</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <SafetyAlertsPanel
+                  alerts={filteredAlerts}
+                  filterPriority={filterPriority}
+                  onFilterChange={setFilterPriority}
+                  selectedAlert={selectedAlert}
+                  onSelectAlert={setSelectedAlert}
+                />
+              </div>
+            )}
 
-            {/* RIGHT PANEL: NIGHT WALKS & GUARDS ON DUTY */}
-            <div className="sec-right-col">
-              <SecurityCommandPanel
-                layers={layers}
-                onLayerChange={handleLayerChange}
-                onFocusIncident={() => setSelectedAlert(initialAlerts[0])}
-              />
-              <NightWalkPanel nightWalks={nightWalks} />
-              <GuardsOnDutyPanel guards={guards} />
-            </div>
+            {/* VIEW: 3D SPATIAL MAP */}
+            {activeTab === "map" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <Map size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">3D Campus Spatial Awareness Map</h2>
+                      <p className="dashboard-view-subtitle">Spatial heatmap overlay, active hazard corridors and Dijkstra routing</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <CampusMapPanel
+                  mapMode={mapMode}
+                  onMapModeChange={setMapMode}
+                  selectedAlert={selectedAlert}
+                  onAssignGuard={handleAssignGuard}
+                  layers={layers}
+                  focusIncident={selectedAlert?.id}
+                />
+              </div>
+            )}
+
+            {/* VIEW: CCTV FEEDS */}
+            {activeTab === "cctv" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <Video size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">Active Optical CCTV Feeds</h2>
+                      <p className="dashboard-view-subtitle">Real-time quad surveillance telemetry</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
+                  {[
+                    { cam: "CAM-01 · North Courtyard", loc: "North Quad Fountain", status: "ONLINE (1080p 60fps)" },
+                    { cam: "CAM-02 · Science Block", loc: "Ground Floor Corridor", status: "ONLINE (1080p 60fps)" },
+                    { cam: "CAM-03 · Main Gate A", loc: "Vehicle Checkpoint", status: "ONLINE (1080p 60fps)" },
+                    { cam: "CAM-04 · Library Square", loc: "East Perimeter Path", status: "ONLINE (1080p 60fps)" },
+                  ].map((c) => (
+                    <div key={c.cam} style={{ background: "#0f172a", borderRadius: "14px", overflow: "hidden", color: "white" }}>
+                      <div style={{ height: "160px", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                        <Video size={36} style={{ color: "#10b981", opacity: 0.8 }} />
+                        <span style={{ position: "absolute", top: "10px", left: "10px", background: "rgba(239, 68, 68, 0.9)", color: "white", fontSize: "10px", fontWeight: "800", padding: "2px 6px", borderRadius: "4px" }}>
+                          ● REC
+                        </span>
+                      </div>
+                      <div style={{ padding: "12px 16px" }}>
+                        <strong style={{ fontSize: "13px" }}>{c.cam}</strong>
+                        <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#94a3b8" }}>{c.loc} · {c.status}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* VIEW: NIGHT SAFEWALKS */}
+            {activeTab === "nightwalk" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <Moon size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">Night SafeWalk Live Escort Monitor</h2>
+                      <p className="dashboard-view-subtitle">Active student journey countdowns and automated overdue alerts</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <NightWalkPanel nightWalks={nightWalks} />
+              </div>
+            )}
+
+            {/* VIEW: GUARDS & PATROLS */}
+            {activeTab === "patrols" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <Users size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">Guards On Duty &amp; Zone Deployments</h2>
+                      <p className="dashboard-view-subtitle">Active security personnel, comms status, and battery levels</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <GuardsOnDutyPanel guards={guards} />
+              </div>
+            )}
+
+            {/* VIEW: NEXUS AI COMMAND */}
+            {activeTab === "nexus" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <Terminal size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">Nexus Security Command AI</h2>
+                      <p className="dashboard-view-subtitle">Automated spatial query runner and tactical layer controller</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <SecurityCommandPanel
+                  layers={layers}
+                  onLayerChange={handleLayerChange}
+                  onFocusIncident={() => setSelectedAlert(initialAlerts[0])}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
