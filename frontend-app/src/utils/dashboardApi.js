@@ -134,3 +134,32 @@ export async function toggleUserStatus(userId, isActive) {
         return { error: "Unable to connect to the backend." };
     }
 }
+
+export async function deleteAdminUser(userId) {
+    const token = getToken();
+
+    if (!token) {
+        return { error: "Please sign in again." };
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { error: data.message || "Failed to delete user" };
+        }
+
+        return data;
+    } catch (error) {
+        console.error("Delete user error:", error);
+        return { error: "Unable to connect to the backend." };
+    }
+}
+

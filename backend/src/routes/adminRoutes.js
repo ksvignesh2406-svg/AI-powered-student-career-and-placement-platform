@@ -6,7 +6,8 @@ const authorize = require("../middleware/roleMiddleware");
 const {
     createUser,
     getUsers,
-    toggleUserStatus
+    toggleUserStatus,
+    deleteUser
 } = require("../controllers/adminController");
 
 const router = express.Router();
@@ -30,6 +31,13 @@ router.patch(
     authenticate,
     authorize("ADMIN"),
     toggleUserStatus
+);
+
+router.delete(
+    "/users/:id",
+    authenticate,
+    authorize("ADMIN"),
+    deleteUser
 );
 
 module.exports = router;
