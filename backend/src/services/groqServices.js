@@ -9,7 +9,7 @@ const generateAIResponse = async (messages) => {
 
         const completion = await groq.chat.completions.create({
             messages,
-            model: "openai/gpt-oss-20b",
+            model: "llama-3.3-70b-versatile",
             temperature: 0.7,
             max_tokens: 1000
         });
