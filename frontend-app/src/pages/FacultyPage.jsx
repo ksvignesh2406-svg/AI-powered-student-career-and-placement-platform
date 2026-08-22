@@ -4,10 +4,12 @@ import {
   AlertTriangle,
   ArrowLeft,
   BookOpen,
+  Bot,
   Calendar,
   CheckCircle,
   FileText,
   GraduationCap,
+  MessageSquare,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -16,6 +18,8 @@ import FacultyClassConsole from "../components/faculty/FacultyClassConsole";
 import FacultyHeader from "../components/faculty/FacultyHeader";
 import FacultyIntelligenceSidebar from "../components/faculty/FacultyIntelligenceSidebar";
 import DashboardFeatureSidebar from "../components/common/DashboardFeatureSidebar";
+import AIChatPanel from "../components/common/AIChatPanel";
+
 import { fetchDashboard } from "../utils/dashboardApi";
 import { clearSession, getSessionUser } from "../utils/authStorage";
 import "../styles/faculty-dashboard.css";
@@ -117,7 +121,16 @@ export default function FacultyPage() {
       icon: Users,
       tooltip: "Computer Science faculty and course roster",
     },
+    {
+      id: "assistant",
+      label: "Campus AI Assistant",
+      icon: MessageSquare,
+      badge: "Groq AI",
+      badgeVariant: "emerald",
+      tooltip: "AI assistant for drafting emails, analyzing student risks, and planning",
+    },
   ];
+
 
   return (
     <div className="faculty-dashboard">
@@ -359,7 +372,34 @@ export default function FacultyPage() {
                 </div>
               </div>
             )}
+
+            {/* VIEW: AI ASSISTANT */}
+            {activeTab === "assistant" && (
+              <AIChatPanel
+                role="faculty"
+                userName={user?.name}
+                accentColor="#059669"
+                placeholder="Ask about students, leaves, schedules, or draft an email..."
+                context={{
+                  faculty: {
+                    name: user?.name,
+                    department: "Computer Science",
+                    classesToday: dashboard.summary.classesToday,
+                  },
+                  atRiskStudents: dashboard.atRiskStudents,
+                  pendingLeaves: leaveRequests.filter((r) => r.status !== "approved").length,
+                  scheduleConflict: dashboard.summary.conflict,
+                }}
+                quickActions={[
+                  { label: "📧 Draft at-risk email", prompt: "Draft a short, empathetic email to an at-risk student who has low attendance and declining exam scores." },
+                  { label: "📋 Summarize leaves", prompt: "Summarize the pending leave requests and flag any that clash with major exam dates." },
+                  { label: "📅 Suggest study tips", prompt: "What study strategies should I recommend to struggling students in my Data Structures class?" },
+                  { label: "⚠️ Conflict resolution", prompt: "How should I handle a schedule conflict between two of my classes on the same day?" },
+                ]}
+              />
+            )}
           </div>
+
         </div>
       </main>
     </div>
