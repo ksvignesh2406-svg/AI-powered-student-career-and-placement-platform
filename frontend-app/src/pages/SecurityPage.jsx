@@ -332,7 +332,7 @@ export default function SecurityPage() {
           <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
             {/* VIEW: OVERVIEW (HOME) */}
             {activeTab === "overview" && (
-              <div className="sec-grid" style={{ margin: 0 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "20px" }}>
                 <SafetyAlertsPanel
                   alerts={filteredAlerts}
                   filterPriority={filterPriority}
@@ -340,15 +340,7 @@ export default function SecurityPage() {
                   selectedAlert={selectedAlert}
                   onSelectAlert={setSelectedAlert}
                 />
-                <CampusMapPanel
-                  mapMode={mapMode}
-                  onMapModeChange={setMapMode}
-                  selectedAlert={selectedAlert}
-                  onAssignGuard={handleAssignGuard}
-                  layers={layers}
-                  focusIncident={selectedAlert?.id}
-                />
-                <div className="sec-right-col">
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                   <NightWalkPanel nightWalks={nightWalks} />
                   <GuardsOnDutyPanel guards={guards} />
                 </div>
