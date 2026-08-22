@@ -1,12 +1,35 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Download, Plus, Search, Trash2, X, Users, UserCheck } from "lucide-react";
 import { addUser, getUsers, removeUser, updateUser } from "../../utils/authStorage";
+import { fetchAdminUsers, createAdminUser, toggleUserStatus } from "../../utils/dashboardApi";
 
 export default function UserDirectoryModal({ onClose, onNotice }) {
   const [users, setUsers] = useState(() => getUsers());
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const loadFromBackend = async () => {
+    setLoading(true);
+    const result = await fetchAdminUsers();
+    setLoading(false);
+    if (result && !result.error && Array.isArray(result.users) && result.users.length > 0) {
+      const formatted = result.users.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role ? u.role.toLowerCase() : "student",
+        department: u.department || "General",
+        status: u.isActive === false ? "suspended" : "active",
+      }));
+      setUsers(formatted);
+    }
+  };
+
+  useEffect(() => {
+    loadFromBackend();
+  }, []);
 
   const filteredUsers = useMemo(() => {
     return users.filter((candidate) => {
@@ -19,15 +42,38 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
     });
   }, [query, roleFilter, users]);
 
-  const handleAddUser = (e) => {
+  const handleAddUser = async (e) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const name = form.get("name");
+    const email = form.get("email");
+    const password = form.get("password");
+    const role = form.get("role");
+    const department = form.get("department");
+
+    // Try backend creation first
+    const backendResult = await createAdminUser({
+      name,
+      email,
+      password,
+      role: role.toUpperCase(),
+      department,
+    });
+
+    if (backendResult && !backendResult.error) {
+      if (onNotice) onNotice(`Created ${name} account on server`);
+      setShowAddForm(false);
+      await loadFromBackend();
+      return;
+    }
+
+    // Fallback to local storage
     const result = addUser({
-      name: form.get("name"),
-      email: form.get("email"),
-      password: form.get("password"),
-      role: form.get("role"),
-      department: form.get("department"),
+      name,
+      email,
+      password,
+      role,
+      department,
     });
 
     if (result.error) {
@@ -43,15 +89,23 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
   const handleRemove = (candidate) => {
     if (!window.confirm(`Remove ${candidate.name}'s account?`)) return;
     removeUser(candidate.id);
-    setUsers(getUsers());
+    setUsers((prev) => prev.filter((u) => u.id !== candidate.id));
     if (onNotice) onNotice(`Removed ${candidate.name}`);
   };
 
-  const handleToggleStatus = (candidate) => {
+  const handleToggleStatus = async (candidate) => {
     const nextStatus =
       candidate.status === "suspended" ? "active" : "suspended";
+    const isActive = nextStatus === "active";
+
+    // Attempt backend update
+    await toggleUserStatus(candidate.id, isActive);
+
     updateUser(candidate.id, { status: nextStatus });
-    setUsers(getUsers());
+    setUsers((prev) =>
+      prev.map((u) => (u.id === candidate.id ? { ...u, status: nextStatus } : u))
+    );
+
     if (onNotice) {
       onNotice(`Account ${candidate.name} is now ${nextStatus}`);
     }
@@ -277,7 +331,7 @@ export default function UserDirectoryModal({ onClose, onNotice }) {
                     colSpan={5}
                     style={{ textAlign: "center", padding: "32px", color: "#94a3b8" }}
                   >
-                    No matching accounts found in directory.
+                    {loading ? "Loading directory from server..." : "No matching accounts found in directory."}
                   </td>
                 </tr>
               )}

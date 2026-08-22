@@ -1,7 +1,7 @@
 import { ArrowUpRight, CalendarDays, CheckCircle2, Clock3, GraduationCap } from "lucide-react";
 
-export default function ParentOverview({ user }) {
-  const childName = user.childName || "your child";
+export default function ParentOverview({ user, child, overview }) {
+  const childName = child?.name || user.childName || "your child";
 
   return (
     <section className="parent-overview">
@@ -11,19 +11,32 @@ export default function ParentOverview({ user }) {
         <p>Here is how {childName} is doing on campus today.</p>
       </div>
       <div className="parent-overview-meta">
-        <div><span>Last updated</span><strong><Clock3 size={14} /> 8:40 AM</strong></div>
+        <div><span>Last updated</span><strong><Clock3 size={14} /> {overview.lastUpdated}</strong></div>
         <button type="button" className="parent-light-action">View full report <ArrowUpRight size={15} /></button>
       </div>
     </section>
   );
 }
 
-export function ParentMetricCards() {
+export function ParentMetricCards({ metrics }) {
+  const icons = {
+    attendance: CheckCircle2,
+    gpa: GraduationCap,
+    tasks: CalendarDays,
+  };
+
   return (
     <div className="parent-metrics">
-      <article><span className="parent-metric-icon green"><CheckCircle2 size={17} /></span><div><strong>92%</strong><span>Attendance</span><small>+4% this month</small></div></article>
-      <article><span className="parent-metric-icon blue"><GraduationCap size={17} /></span><div><strong>8.6</strong><span>Current GPA</span><small>Top 18% of class</small></div></article>
-      <article><span className="parent-metric-icon amber"><CalendarDays size={17} /></span><div><strong>3</strong><span>Upcoming tasks</span><small>Next due Friday</small></div></article>
+      {metrics.map((metric) => {
+        const Icon = icons[metric.id] || CheckCircle2;
+
+        return (
+          <article key={metric.id}>
+            <span className={`parent-metric-icon ${metric.tone}`}><Icon size={17} /></span>
+            <div><strong>{metric.value}</strong><span>{metric.label}</span><small>{metric.note}</small></div>
+          </article>
+        );
+      })}
     </div>
   );
 }

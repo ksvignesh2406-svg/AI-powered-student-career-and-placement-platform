@@ -1,11 +1,6 @@
 import { AlertCircle, Check, FileText, X } from "lucide-react";
 
-const atRiskStudents = [
-  { initials: "AK", name: "Aarav Kumar", signal: "Missed 3 consecutive classes" },
-  { initials: "SR", name: "Sneha Roy", signal: "Attendance is at 60%" },
-];
-
-export default function FacultyIntelligenceSidebar({ leaveRequests, onApprove, onReject }) {
+export default function FacultyIntelligenceSidebar({ atRiskStudents, leaveRequests, onApprove, onReject }) {
   return (
     <aside className="faculty-sidebar">
       <section className="faculty-panel">

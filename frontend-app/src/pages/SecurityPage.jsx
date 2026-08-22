@@ -1,7 +1,24 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Map,
+  Moon,
+  Radio,
+  Shield,
+  ShieldAlert,
+  Sparkles,
+  Terminal,
+  Users,
+  Video,
+} from "lucide-react";
 import { clearSession, getSessionUser } from "../utils/authStorage";
+import {
+  subscribeEmergencyEvents,
+  sendSecurityAcknowledgement,
+  getActiveSOSEvent,
+} from "../utils/emergencyBridge";
 
 import SecurityHeader from "../components/security/SecurityHeader";
 import SecurityBanner from "../components/security/SecurityBanner";
@@ -11,6 +28,8 @@ import CampusMapPanel from "../components/security/CampusMapPanel";
 import NightWalkPanel from "../components/security/NightWalkPanel";
 import GuardsOnDutyPanel from "../components/security/GuardsOnDutyPanel";
 import PublicAlertModal from "../components/security/PublicAlertModal";
+import SecurityCommandPanel from "../components/security/SecurityCommandPanel";
+import DashboardFeatureSidebar from "../components/common/DashboardFeatureSidebar";
 import "../styles/security-dashboard.css";
 
 const initialAlerts = [
@@ -121,11 +140,13 @@ export default function SecurityPage() {
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [audioMuted, setAudioMuted] = useState(false);
   const [mapMode, setMapMode] = useState("3D Campus");
+  const [layers, setLayers] = useState({ heatmap: true, patrols: true, cctv: false });
   const [notice, setNotice] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
 
   const flash = (msg) => {
     setNotice(msg);
-    setTimeout(() => setNotice(""), 3000);
+    setTimeout(() => setNotice(""), 4000);
   };
 
   useEffect(() => {
@@ -157,6 +178,71 @@ export default function SecurityPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // Emergency Bridge: Listen for Student SOS activations & cancellations
+  useEffect(() => {
+    const activeSos = getActiveSOSEvent();
+    if (activeSos && activeSos.status === "ACTIVE") {
+      const existingAlert = {
+        id: activeSos.id,
+        priority: "URGENT",
+        title: `🚨 EMERGENCY SOS: ${activeSos.studentName}`,
+        category: "Emergency SOS",
+        location: activeSos.location,
+        time: "Just now",
+        timestamp: activeSos.timestamp,
+        description: `Emergency distress beacon activated by ${activeSos.studentName} (${activeSos.studentId}) at ${activeSos.location}. Unit Alpha assigned.`,
+        status: "Pending",
+        reporter: `${activeSos.studentName} (${activeSos.studentId})`,
+      };
+      setAlerts((prev) => [existingAlert, ...prev.filter((a) => a.id !== activeSos.id)]);
+      setSelectedAlert(existingAlert);
+    }
+
+    const unsubscribe = subscribeEmergencyEvents((event) => {
+      if (event.type === "STUDENT_SOS_ACTIVATED") {
+        const newSosAlert = {
+          id: event.payload.id,
+          priority: "URGENT",
+          title: `🚨 EMERGENCY SOS: ${event.payload.studentName}`,
+          category: "Emergency SOS",
+          location: event.payload.location,
+          time: "Just now",
+          timestamp: Date.now(),
+          description: `Emergency distress beacon activated by ${event.payload.studentName} (${event.payload.studentId}) at ${event.payload.location}. Unit Alpha assigned.`,
+          status: "Pending",
+          reporter: `${event.payload.studentName} (${event.payload.studentId})`,
+        };
+
+        setAlerts((prev) => [newSosAlert, ...prev.filter((a) => a.id !== event.payload.id)]);
+        setSelectedAlert(newSosAlert);
+        flash(`🚨 EMERGENCY SOS from ${event.payload.studentName} at ${event.payload.location}! Immediate Acknowledgement Dispatched.`);
+
+        // Immediately trigger automated acknowledgement back to student dashboard!
+        sendSecurityAcknowledgement({
+          sosId: event.payload.id,
+          officer: "Officer Suresh Kumar (Patrol Unit Alpha)",
+          eta: "2 mins",
+          message: `Campus Security Command has verified your distress signal. Officer Suresh Kumar is rushing to ${event.payload.location} (ETA ~2 mins). Please stay where you are.`,
+        });
+      } else if (event.type === "STUDENT_SOS_CANCELLED") {
+        setAlerts((prev) =>
+          prev.map((a) =>
+            a.id === event.payload.id
+              ? {
+                  ...a,
+                  status: "Resolved",
+                  title: a.title.replace("🚨 ", "") + " (Cancelled by Student)",
+                }
+              : a
+          )
+        );
+        flash(`SOS #${event.payload.id} was marked false alarm & cleared by the student.`);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const formattedTime = time
     ? time.toLocaleTimeString("en-US", {
         hour: "2-digit",
@@ -184,7 +270,17 @@ export default function SecurityPage() {
         prev ? { ...prev, status: "Assigned" } : null
       );
     }
-    flash(`Guard dispatched for incident #${id}`);
+
+    // Send updated acknowledgement packet to student
+    sendSecurityAcknowledgement({
+      sosId: id,
+      officer: "Officer Suresh Kumar (Unit Alpha)",
+      eta: "1 min",
+      message:
+        "Patrol Unit Alpha has reached your building entrance and is proceeding to your floor.",
+    });
+
+    flash(`Guard dispatched & live update sent to student dashboard for incident #${id}`);
   };
 
   const handleLogout = () => {
@@ -201,9 +297,79 @@ export default function SecurityPage() {
     (a) => a.priority === "URGENT" && a.status === "Pending"
   );
 
+  const handleLayerChange = (layer, value) => {
+    setLayers((current) => ({
+      ...current,
+      [layer]: typeof value === "boolean" ? value : !current[layer],
+    }));
+  };
+
+  const securitySidebarItems = [
+    {
+      id: "overview",
+      label: "Home Overview",
+      icon: Sparkles,
+      tooltip: "Command summary & active operations",
+    },
+    {
+      id: "triage",
+      label: "SOS Emergency Triage",
+      icon: ShieldAlert,
+      badge: `${alerts.filter((a) => a.status === "Pending").length} Pending`,
+      badgeVariant:
+        alerts.filter((a) => a.status === "Pending").length > 0
+          ? "highlight"
+          : "emerald",
+      tooltip: "Active student distress signals and escort calls",
+    },
+    {
+      id: "map",
+      label: "3D Spatial Campus Map",
+      icon: Map,
+      badge: mapMode,
+      tooltip: "Interactive 3D building layout with incident heatmap",
+    },
+    {
+      id: "cctv",
+      label: "CCTV Telemetry Feeds",
+      icon: Video,
+      badge: layers.cctv ? "4 Live" : "Standby",
+      badgeVariant: layers.cctv ? "emerald" : "",
+      tooltip: "Active optical security feeds",
+    },
+    {
+      id: "nightwalk",
+      label: "Night SafeWalk Monitor",
+      icon: Moon,
+      badge: `${nightWalks.length} Active`,
+      tooltip: "Live monitoring of student night escort timers",
+    },
+    {
+      id: "patrols",
+      label: "Guards & Patrol Zones",
+      icon: Users,
+      badge: `${guards.filter((g) => g.status === "On Duty").length} On Duty`,
+      tooltip: "Check patrol deployments, guard battery and zones",
+    },
+    {
+      id: "broadcast",
+      label: "Public Safety Advisory",
+      icon: Radio,
+      tooltip: "Broadcast audible emergency siren or text alert to campus",
+      action: () => setIsBroadcastModalOpen(true),
+    },
+    {
+      id: "nexus",
+      label: "Nexus Security AI",
+      icon: Terminal,
+      badge: "Ready",
+      tooltip: "Command-line AI tactical analysis and hazard routing",
+    },
+  ];
+
   return (
     <div className="security-app">
-      <div className="security-shell">
+      <div className="security-shell" style={{ maxWidth: "1400px" }}>
         {/* 1. TOP NAV BAR */}
         <SecurityHeader
           user={user}
@@ -230,29 +396,201 @@ export default function SecurityPage() {
           onAssignGuard={handleAssignGuard}
         />
 
-        {/* 4. THREE-COLUMN DASHBOARD GRID */}
-        <div className="sec-grid">
-          {/* LEFT PANEL: SAFETY ALERTS & REPORTS */}
-          <SafetyAlertsPanel
-            alerts={filteredAlerts}
-            filterPriority={filterPriority}
-            onFilterChange={setFilterPriority}
-            selectedAlert={selectedAlert}
-            onSelectAlert={setSelectedAlert}
+        {/* 4. SIDEBAR + DYNAMIC VIEW WORKSPACE */}
+        <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", width: "100%", marginTop: "24px" }}>
+          {/* Feature Sidebar */}
+          <DashboardFeatureSidebar
+            role="security"
+            kicker="Command Center"
+            title="Tactical Tools"
+            items={securitySidebarItems}
+            activeItem={activeTab}
+            onSelectItem={setActiveTab}
+            footerTitle="Emergency Relay Active"
+            footerText="Connected to Student SOS Beacons"
           />
 
-          {/* CENTER PANEL: 3D CAMPUS MAP CONTAINER */}
-          <CampusMapPanel
-            mapMode={mapMode}
-            onMapModeChange={setMapMode}
-            selectedAlert={selectedAlert}
-            onAssignGuard={handleAssignGuard}
-          />
+          {/* Dynamic Main Workspace */}
+          <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
+            {/* VIEW: OVERVIEW (HOME) */}
+            {activeTab === "overview" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "20px" }}>
+                <SafetyAlertsPanel
+                  alerts={filteredAlerts}
+                  filterPriority={filterPriority}
+                  onFilterChange={setFilterPriority}
+                  selectedAlert={selectedAlert}
+                  onSelectAlert={setSelectedAlert}
+                />
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                  <NightWalkPanel nightWalks={nightWalks} />
+                  <GuardsOnDutyPanel guards={guards} />
+                </div>
+              </div>
+            )}
 
-          {/* RIGHT PANEL: NIGHT WALKS & GUARDS ON DUTY */}
-          <div className="sec-right-col">
-            <NightWalkPanel nightWalks={nightWalks} />
-            <GuardsOnDutyPanel guards={guards} />
+            {/* VIEW: EMERGENCY TRIAGE */}
+            {activeTab === "triage" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <ShieldAlert size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">Emergency SOS &amp; Incident Triage Queue</h2>
+                      <p className="dashboard-view-subtitle">Live dispatcher queue with instant auto-acknowledgement and guard dispatch</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <SafetyAlertsPanel
+                  alerts={filteredAlerts}
+                  filterPriority={filterPriority}
+                  onFilterChange={setFilterPriority}
+                  selectedAlert={selectedAlert}
+                  onSelectAlert={setSelectedAlert}
+                />
+              </div>
+            )}
+
+            {/* VIEW: 3D SPATIAL MAP */}
+            {activeTab === "map" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <Map size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">3D Campus Spatial Awareness Map</h2>
+                      <p className="dashboard-view-subtitle">Spatial heatmap overlay, active hazard corridors and Dijkstra routing</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <CampusMapPanel
+                  mapMode={mapMode}
+                  onMapModeChange={setMapMode}
+                  selectedAlert={selectedAlert}
+                  onAssignGuard={handleAssignGuard}
+                  layers={layers}
+                  focusIncident={selectedAlert?.id}
+                />
+              </div>
+            )}
+
+            {/* VIEW: CCTV FEEDS */}
+            {activeTab === "cctv" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <Video size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">Active Optical CCTV Feeds</h2>
+                      <p className="dashboard-view-subtitle">Real-time quad surveillance telemetry</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
+                  {[
+                    { cam: "CAM-01 · North Courtyard", loc: "North Quad Fountain", status: "ONLINE (1080p 60fps)" },
+                    { cam: "CAM-02 · Science Block", loc: "Ground Floor Corridor", status: "ONLINE (1080p 60fps)" },
+                    { cam: "CAM-03 · Main Gate A", loc: "Vehicle Checkpoint", status: "ONLINE (1080p 60fps)" },
+                    { cam: "CAM-04 · Library Square", loc: "East Perimeter Path", status: "ONLINE (1080p 60fps)" },
+                  ].map((c) => (
+                    <div key={c.cam} style={{ background: "#0f172a", borderRadius: "14px", overflow: "hidden", color: "white" }}>
+                      <div style={{ height: "160px", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                        <Video size={36} style={{ color: "#10b981", opacity: 0.8 }} />
+                        <span style={{ position: "absolute", top: "10px", left: "10px", background: "rgba(239, 68, 68, 0.9)", color: "white", fontSize: "10px", fontWeight: "800", padding: "2px 6px", borderRadius: "4px" }}>
+                          ● REC
+                        </span>
+                      </div>
+                      <div style={{ padding: "12px 16px" }}>
+                        <strong style={{ fontSize: "13px" }}>{c.cam}</strong>
+                        <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#94a3b8" }}>{c.loc} · {c.status}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* VIEW: NIGHT SAFEWALKS */}
+            {activeTab === "nightwalk" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <Moon size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">Night SafeWalk Live Escort Monitor</h2>
+                      <p className="dashboard-view-subtitle">Active student journey countdowns and automated overdue alerts</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <NightWalkPanel nightWalks={nightWalks} />
+              </div>
+            )}
+
+            {/* VIEW: GUARDS & PATROLS */}
+            {activeTab === "patrols" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <Users size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">Guards On Duty &amp; Zone Deployments</h2>
+                      <p className="dashboard-view-subtitle">Active security personnel, comms status, and battery levels</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <GuardsOnDutyPanel guards={guards} />
+              </div>
+            )}
+
+            {/* VIEW: NEXUS AI COMMAND */}
+            {activeTab === "nexus" && (
+              <div className="dashboard-view-card">
+                <div className="dashboard-view-header" style={{ margin: 0 }}>
+                  <div className="dashboard-view-header-left">
+                    <div className="dashboard-view-header-icon">
+                      <Terminal size={20} />
+                    </div>
+                    <div>
+                      <h2 className="dashboard-view-title">Nexus Security Command AI</h2>
+                      <p className="dashboard-view-subtitle">Automated spatial query runner and tactical layer controller</p>
+                    </div>
+                  </div>
+                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
+                    <ArrowLeft size={14} /> Back to Overview
+                  </button>
+                </div>
+                <SecurityCommandPanel
+                  layers={layers}
+                  onLayerChange={handleLayerChange}
+                  onFocusIncident={() => setSelectedAlert(initialAlerts[0])}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
