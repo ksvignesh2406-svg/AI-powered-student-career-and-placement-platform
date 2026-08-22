@@ -22,6 +22,8 @@ import ParentOverview, {
 } from "../components/parent/ParentOverview";
 import ParentSupportSidebar from "../components/parent/ParentSupportSidebar";
 import DashboardFeatureSidebar from "../components/common/DashboardFeatureSidebar";
+import AIChatPanel from "../components/common/AIChatPanel";
+
 import { fetchDashboard } from "../utils/dashboardApi";
 import { clearSession, getSessionUser } from "../utils/authStorage";
 import "../styles/parent-dashboard.css";
@@ -142,7 +144,16 @@ export default function ParentPage() {
       icon: FileText,
       tooltip: "Download official grade sheets and leave slips",
     },
+    {
+      id: "assistant",
+      label: "Campus AI Assistant",
+      icon: MessageSquare,
+      badge: "Groq AI",
+      badgeVariant: "emerald",
+      tooltip: "AI that explains your child's progress and drafts proctor messages",
+    },
   ];
+
 
   return (
     <div className="parent-dashboard">
@@ -351,7 +362,33 @@ export default function ParentPage() {
                 <ParentDocumentsPanel documents={dashboard.documents} />
               </div>
             )}
+
+            {/* VIEW: AI ASSISTANT */}
+            {activeTab === "assistant" && (
+              <AIChatPanel
+                role="parent"
+                userName={user?.name}
+                accentColor="#0d9488"
+                placeholder="Ask about your child's progress, fees, attendance..."
+                context={{
+                  parent: { name: user?.name },
+                  child: dashboard.child,
+                  cgpa: "8.4",
+                  attendance: dashboard.metrics?.find?.((m) => m.label === "Attendance")?.value || "82%",
+                  feeStatus: dashboard.finance?.due || "Rs. 0 due",
+                  wellbeing: dashboard.wellbeing?.title || "Optimal",
+                  subjects: dashboard.subjects,
+                }}
+                quickActions={[
+                  { label: "📊 Explain grades", prompt: "Can you explain my child's academic performance in simple terms and what they should focus on?" },
+                  { label: "📧 Draft proctor message", prompt: "Draft a polite message requesting a one-on-one meeting with my child's proctor to discuss academic progress." },
+                  { label: "⚠️ Attendance concern", prompt: "My child's attendance is below 85%. What are the risks and what should we do?" },
+                  { label: "💰 Fee clarification", prompt: "Explain how the semester fee structure works and what happens if fees are paid late." },
+                ]}
+              />
+            )}
           </div>
+
         </div>
       </main>
     </div>
