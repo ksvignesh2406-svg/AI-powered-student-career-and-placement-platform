@@ -24,4 +24,4 @@ const generateAIResponse = async (messages) => {
 
 module.exports = {
     generateAIResponse
-};
+};
