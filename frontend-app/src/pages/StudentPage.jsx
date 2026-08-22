@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { askCampusAI } from "../utils/dashboardApi";
 import { AnimatePresence, motion, useAnimation } from "framer-motion";
 import {
   AlertCircle,
-  ArrowLeft,
   ArrowRight,
   Bell,
   BookOpen,
@@ -16,30 +16,22 @@ import {
   Shield,
   ShieldAlert,
   Sparkles,
-  UserCheck,
   X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { fetchDashboard } from "../utils/dashboardApi";
 import { clearSession, getSessionUser } from "../utils/authStorage";
-import {
-  publishStudentSOS,
-  cancelStudentSOS,
-  subscribeEmergencyEvents,
-  getActiveSOSEvent,
-  getActiveACKEvent,
-} from "../utils/emergencyBridge";
 import CampusHeatmap3D from "../components/CampusHeatmap3D";
 import DashboardFeatureSidebar from "../components/common/DashboardFeatureSidebar";
 import "../styles/student-dashboard.css";
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.08 } },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 20 },
   show: {
     opacity: 1,
     y: 0,
@@ -140,11 +132,11 @@ function PerformanceRadar() {
   const values = performanceMetrics.map((metric, index) => point(index, metric.value)).join(" ");
 
   return (
-    <div className="student-performance" style={{ margin: 0 }}>
+    <div className="student-performance" id="performance-radar-section">
       <div className="student-performance-heading">
         <div>
           <span>Performance map</span>
-          <strong>Term progress breakdown</strong>
+          <strong>Term progress</strong>
         </div>
         <Sparkles size={18} />
       </div>
@@ -202,7 +194,7 @@ function PerformanceRadar() {
   );
 }
 
-function SwipeToSOS({ isSOSActive, onActivateSOS, onCancelSOS, sosAck }) {
+function SwipeToSOS({ isSOSActive, setIsSOSActive }) {
   const containerRef = useRef(null);
   const dragControls = useAnimation();
   const [isDragging, setIsDragging] = useState(false);
@@ -210,14 +202,12 @@ function SwipeToSOS({ isSOSActive, onActivateSOS, onCancelSOS, sosAck }) {
   const handleDragEnd = (event, info) => {
     setIsDragging(false);
     const containerWidth = containerRef.current?.offsetWidth || 0;
-    if (info.offset.x >= containerWidth - 92) {
-      onActivateSOS();
-    } else {
+    if (info.offset.x >= containerWidth - 92) setIsSOSActive(true);
+    else
       dragControls.start({
         x: 0,
         transition: { type: "spring", stiffness: 400, damping: 25 },
       });
-    }
   };
 
   if (isSOSActive)
@@ -228,40 +218,23 @@ function SwipeToSOS({ isSOSActive, onActivateSOS, onCancelSOS, sosAck }) {
         animate={{
           scale: 1,
           opacity: 1,
-          backgroundColor: sosAck
-            ? ["#065f46", "#047857", "#065f46"]
-            : ["#ef4444", "#b91c1c", "#ef4444"],
+          backgroundColor: ["#ef4444", "#b91c1c", "#ef4444"],
         }}
         transition={{
           backgroundColor: { repeat: Infinity, duration: 1.5 },
           scale: { type: "spring" },
         }}
-        style={{ padding: "24px 20px" }}
       >
         <div className="sos-overlay" />
         <ShieldAlert size={48} className="sos-content sos-pulse" />
-        <div className="sos-content" style={{ textAlign: "center" }}>
-          <h3 style={{ fontSize: "20px", fontWeight: "900", letterSpacing: "0.05em", margin: "0 0 6px" }}>
-            {sosAck ? "✅ ACKNOWLEDGED BY SECURITY COMMAND" : "🚨 EMERGENCY SOS BROADCASTED"}
-          </h3>
-          <p style={{ margin: "0 0 12px", fontSize: "13px", opacity: 0.95 }}>
-            {sosAck
-              ? sosAck.message || "Patrol Unit has been dispatched to your location."
-              : "Transmitting emergency coordinates to Security Command Center..."}
-          </p>
-
-          {sosAck && (
-            <div style={{ background: "rgba(255,255,255,0.18)", padding: "10px 16px", borderRadius: "12px", marginBottom: "14px", display: "inline-flex", flexDirection: "column", gap: "4px", border: "1px solid rgba(255,255,255,0.3)" }}>
-              <div style={{ fontSize: "13px", fontWeight: "800" }}>👮 {sosAck.officer}</div>
-              <div style={{ fontSize: "12px", color: "#a7f3d0" }}>⏱️ Estimated Arrival: {sosAck.eta || "2 mins"} · Stay where you are</div>
-            </div>
-          )}
+        <div className="sos-content">
+          <h3>SOS BROADCASTED</h3>
+          <p>Campus Security is on their way.</p>
         </div>
         <button
           className="sos-cancel sos-content"
           type="button"
-          onClick={onCancelSOS}
-          style={{ cursor: "pointer" }}
+          onClick={() => setIsSOSActive(false)}
         >
           Cancel False Alarm
         </button>
@@ -288,7 +261,13 @@ function SwipeToSOS({ isSOSActive, onActivateSOS, onCancelSOS, sosAck }) {
   );
 }
 
-function EmbeddedChatAssistant({ studentName, greeting }) {
+function ChatAssistant({
+  studentName,
+  greeting,
+  dashboard,
+  isChatOpen,
+  setIsChatOpen,
+}) {
   const [question, setQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState([
@@ -296,129 +275,248 @@ function EmbeddedChatAssistant({ studentName, greeting }) {
       role: "assistant",
       text:
         greeting ||
-        `Hi ${studentName || "there"}! I am your AI campus companion. Ask me anything about course timings, fastest routes, safe corridors, or study planning.`,
+        `Hi ${studentName || "there"}! I can help with your classes, performance, campus safety, or the fastest route to your next class.`,
+    },
+  ]);
+  const scrollRef = useRef(null);
+
+  // Auto-scroll to bottom on every new message or loading update
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
+
+
+  const sendMessage = async (event) => {
+  event?.preventDefault();
+
+  const prompt = question.trim();
+
+  if (!prompt || isLoading) return;
+
+  setQuestion("");
+
+  setMessages((current) => [
+    ...current,
+    {
+      role: "user",
+      text: prompt,
     },
   ]);
 
-  const sendMessage = async (event) => {
-    event?.preventDefault();
-    const prompt = question.trim();
-    if (!prompt || isLoading) return;
+  setIsLoading(true);
 
-    setQuestion("");
-    setMessages((current) => [...current, { role: "user", text: prompt }]);
-    setIsLoading(true);
+  try {
+    const context = {
+      student: {
+        name: studentName,
+        attendance:
+          dashboard?.summary?.attendance?.value || "82%",
+        attendanceStatus:
+          dashboard?.summary?.attendance?.status || "Safe",
+        pendingFees:
+          dashboard?.summary?.fees?.value || "Rs. 0",
+        feeStatus:
+          dashboard?.summary?.fees?.status || "Cleared",
+      },
 
-    const apiUrl = import.meta.env.VITE_AI_API_URL;
-    try {
-      let answer;
-      if (apiUrl) {
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are Campus Assistant AI. Be concise, supportive, and use this student context: attendance 82%, assignments 76%, projects 88%, exams 71%, participation 64%.",
-              },
-              ...messages.map((m) => ({ role: m.role, content: m.text })),
-              { role: "user", content: prompt },
-            ],
-          }),
-        });
+      academicPerformance: {
+        attendance: 82,
+        assignments: 76,
+        projects: 88,
+        exams: 71,
+        participation: 64,
+      },
 
-        if (!response.ok) throw new Error("AI request failed");
-        const data = await response.json();
-        answer = data.choices?.[0]?.message?.content || data.message || data.response;
-        if (!answer) throw new Error("AI response was empty");
-      } else {
-        const normalizedPrompt = prompt.toLowerCase();
-        if (normalizedPrompt.includes("ghost") || normalizedPrompt.includes("timer")) {
-          answer =
-            "There are 2 active night-walk timers. One escort is delayed near the Science Block and security has been notified.";
-        } else if (normalizedPrompt.includes("route") || normalizedPrompt.includes("safepath")) {
-          const route = calculateSafeRoute("Main Gate", "Dorm A", ROUTE_INCIDENTS);
-          answer = `SafePath calculated around active incidents: ${route.join(
-            " -> "
-          )}. Open SafePath to view the route on the 3D map.`;
-        } else {
-          answer =
-            "Your strongest area is projects at 88%. Try a short exam revision session next; exams are currently your biggest opportunity at 71%.";
-        }
-      }
-      setMessages((current) => [...current, { role: "assistant", text: answer }]);
-    } catch {
-      setMessages((current) => [
-        ...current,
-        {
-          role: "assistant",
-          text: "I could not reach the AI service right now. Please try again in a moment.",
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
+      nextClass: dashboard?.summary?.nextClass || {
+        title: "Data Structures Lab",
+        startsIn: "15 mins",
+        location: "Block B, Room 302",
+      },
+
+      campusSafety: {
+        activeIncidents: ROUTE_INCIDENTS.map((incident) => ({
+          type: incident.type,
+          location: incident.location,
+          intensity: incident.intensity,
+        })),
+
+        safeRoute: calculateSafeRoute(
+          "Main Gate",
+          "Dorm A",
+          ROUTE_INCIDENTS
+        ),
+      },
+    };
+
+    const result = await askCampusAI(prompt, context);
+
+    if (result.error) {
+      throw new Error(result.error);
     }
-  };
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", height: "480px", background: "white", borderRadius: "18px", border: "1px solid #e2e8f0", overflow: "hidden" }}>
-      <div style={{ padding: "14px 20px", background: "linear-gradient(135deg, #059669 0%, #047857 100%)", color: "white", display: "flex", alignItems: "center", gap: "10px", fontWeight: "700" }}>
-        <MessageSquare size={18} />
-        <span>Campus Assistant AI</span>
-      </div>
-      <div style={{ flex: 1, padding: "16px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc" }}>
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            style={{
-              alignSelf: message.role === "user" ? "flex-end" : "flex-start",
-              maxWidth: "80%",
-              padding: "10px 14px",
-              borderRadius: "14px",
-              fontSize: "13px",
-              lineHeight: "1.4",
-              background: message.role === "user" ? "#059669" : "#ffffff",
-              color: message.role === "user" ? "#ffffff" : "#1e293b",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-            }}
+    setMessages((current) => [
+      ...current,
+      {
+        role: "assistant",
+        text:
+          result.response ||
+          "I could not generate a response.",
+      },
+    ]);
+  } catch (error) {
+    console.error("Campus AI error:", error);
+
+    setMessages((current) => [
+      ...current,
+      {
+        role: "assistant",
+        text:
+          error.message ||
+          "I could not reach the AI service right now. Please try again.",
+      },
+    ]);
+  } finally {
+    setIsLoading(false);
+  }
+};  return (
+    <div className="student-chat-wrap">
+      <AnimatePresence>
+        {isChatOpen && (
+          <motion.div
+            className="student-chat"
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
           >
-            {message.text}
-          </div>
-        ))}
-        {isLoading && <p style={{ fontSize: "12px", color: "#64748b" }}>Thinking...</p>}
-      </div>
-      <form onSubmit={sendMessage} style={{ display: "flex", padding: "12px", background: "#ffffff", borderTop: "1px solid #e2e8f0", gap: "8px" }}>
-        <input
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask about courses, routes, or safety..."
-          style={{ flex: 1, padding: "10px 14px", borderRadius: "10px", border: "1px solid #cbd5e1", outline: "none", fontSize: "13px" }}
-        />
-        <button
-          type="submit"
-          disabled={isLoading}
-          style={{ background: "#059669", color: "white", border: "none", borderRadius: "10px", padding: "0 16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
-          <Send size={16} />
-        </button>
-      </form>
+            <div className="student-chat-header">
+              <span>
+                <MessageSquare size={20} /> Campus Assistant AI
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsChatOpen(false)}
+                aria-label="Close chat"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="student-chat-body" ref={scrollRef}>
+              {messages.map((message, index) => (
+                <p
+                  className={
+                    message.role === "user" ? "student-chat-message-user" : ""
+                  }
+                  key={`${message.role}-${index}`}
+                >
+                  {message.text}
+                </p>
+              ))}
+              {isLoading && <p className="student-chat-loading">Thinking...</p>}
+            </div>
+            <form className="student-chat-input" onSubmit={sendMessage}>
+              <input
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                type="text"
+                placeholder="Ask anything..."
+                aria-label="Ask Campus Assistant AI"
+              />
+              <button
+                type="submit"
+                aria-label="Send message"
+                disabled={isLoading}
+              >
+                <Send size={16} />
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <button
+        className="student-chat-button"
+        type="button"
+        onClick={() => setIsChatOpen(!isChatOpen)}
+        aria-label={isChatOpen ? "Close chat" : "Open chat"}
+      >
+        {isChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
+      </button>
     </div>
   );
 }
 
-export default function StudentPage() {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(() => getSessionUser());
-  const [dashboard, setDashboard] = useState(defaultDashboard);
-  const [error, setError] = useState("");
-  const [isSOSActive, setIsSOSActive] = useState(false);
-  const [activeSosId, setActiveSosId] = useState(null);
-  const [sosAck, setSosAck] = useState(null);
-  const [activeTab, setActiveTab] = useState("overview");
+function NightWalkModal({ onClose }) {
+  const [timeLeft, setTimeLeft] = useState(600);
+  useEffect(() => {
+    const timer = setInterval(
+      () => setTimeLeft((previous) => Math.max(previous - 1, 0)),
+      1000
+    );
+    return () => clearInterval(timer);
+  }, []);
 
-  // SafePath State
+  const minutes = Math.floor(timeLeft / 60)
+    .toString()
+    .padStart(2, "0");
+  const seconds = (timeLeft % 60).toString().padStart(2, "0");
+
+  return (
+    <motion.div
+      className="night-walk-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="night-walk-modal"
+        initial={{ y: "100%", opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      >
+        <div className="modal-handle" />
+        <div className="night-walk-title">
+          <div>
+            <Moon size={32} />
+          </div>
+          <h2>Night Walk Active</h2>
+          <p>
+            We are monitoring your journey. If the timer runs out, Campus Security
+            will be alerted.
+          </p>
+        </div>
+        <div className="night-walk-timer">
+          <Clock size={24} />
+          <strong>
+            {minutes}:{seconds}
+          </strong>
+        </div>
+        <div className="security-pin">
+          <label>Security PIN</label>
+          <div>
+            {[1, 2, 3, 4].map((number) => (
+              <input
+                key={number}
+                type="password"
+                maxLength={1}
+                aria-label={`PIN digit ${number}`}
+              />
+            ))}
+          </div>
+        </div>
+        <button className="end-walk" type="button" onClick={onClose}>
+          End Safe Walk
+        </button>
+        <button className="cancel-walk" type="button" onClick={onClose}>
+          Cancel
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function StudentCampusMapModal({ onClose }) {
   const [start, setStart] = useState("Main Gate");
   const [end, setEnd] = useState("Dorm A");
   const [activeIncidentId, setActiveIncidentId] = useState(null);
@@ -428,69 +526,98 @@ export default function StudentPage() {
     (incident) => incident.id === activeIncidentId
   );
 
-  // Night Walk State
-  const [timeLeft, setTimeLeft] = useState(600);
-  const [walkActive, setWalkActive] = useState(false);
+  return (
+    <motion.div
+      className="student-map-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="student-map-modal"
+        initial={{ y: 24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 24, opacity: 0 }}
+      >
+        <div className="student-map-modal-header">
+          <div>
+            <span>SafePath / Nexus Routing</span>
+            <h2>Live campus 3D map</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close campus map"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="student-map-route-controls">
+          <label>
+            From
+            <select
+              value={start}
+              onChange={(event) => setStart(event.target.value)}
+            >
+              {Object.keys(ROUTE_POINTS).map((node) => (
+                <option key={node}>{node}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            To
+            <select
+              value={end}
+              onChange={(event) => setEnd(event.target.value)}
+            >
+              {Object.keys(ROUTE_POINTS).map((node) => (
+                <option key={node}>{node}</option>
+              ))}
+            </select>
+          </label>
+          <div className="student-route-result">
+            <strong>
+              {route.length ? route.join(" -> ") : "No safe route found"}
+            </strong>
+            <span>
+              {selectedIncident
+                ? `${selectedIncident.type} selected`
+                : "Route avoids active incident zones"}
+            </span>
+          </div>
+        </div>
+        <div className="student-map-viewport">
+          <CampusHeatmap3D
+            incidents={ROUTE_INCIDENTS}
+            activeIncidentId={activeIncidentId}
+            onIncidentSelect={setActiveIncidentId}
+            routePath={routePath}
+          />
+        </div>
+        <div className="student-map-footer">
+          <span>
+            <b /> Campus grid online
+          </span>
+          <span>
+            {ROUTE_INCIDENTS.length} active safety signals · click a marker for
+            details
+          </span>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
 
-  useEffect(() => {
-    if (!walkActive) return;
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [walkActive]);
-
-  const minutes = Math.floor(timeLeft / 60)
-    .toString()
-    .padStart(2, "0");
-  const seconds = (timeLeft % 60).toString().padStart(2, "0");
-
-  // Emergency Bridge Subscription for SOS Acknowledgement
-  useEffect(() => {
-    const existingSOS = getActiveSOSEvent();
-    if (existingSOS && existingSOS.status === "ACTIVE") {
-      setIsSOSActive(true);
-      setActiveSosId(existingSOS.id);
-    }
-    const existingAck = getActiveACKEvent();
-    if (existingAck) {
-      setSosAck(existingAck);
-    }
-
-    const unsubscribe = subscribeEmergencyEvents((event) => {
-      if (event.type === "SECURITY_ACK_TRIGGERED") {
-        setSosAck(event.payload);
-      } else if (event.type === "STUDENT_SOS_CANCELLED") {
-        setIsSOSActive(false);
-        setActiveSosId(null);
-        setSosAck(null);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const handleActivateSOS = () => {
-    const newSosId = `SOS-${Date.now()}`;
-    setActiveSosId(newSosId);
-    setIsSOSActive(true);
-    setSosAck(null);
-    publishStudentSOS({
-      id: newSosId,
-      studentName: user.name || "Student",
-      studentId: user.registerNumber || "26BCE1123",
-      location: "Academic Block B (Near Lab 302)",
-    });
-  };
-
-  const handleCancelSOS = () => {
-    if (activeSosId) {
-      cancelStudentSOS(activeSosId);
-    }
-    setIsSOSActive(false);
-    setActiveSosId(null);
-    setSosAck(null);
-  };
+export default function StudentPage() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(() => getSessionUser());
+  const [dashboard, setDashboard] = useState(defaultDashboard);
+  const [error, setError] = useState("");
+  const [isSOSActive, setIsSOSActive] = useState(false);
+  const [showNightWalk, setShowNightWalk] = useState(false);
+  const [showCampusMap, setShowCampusMap] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeSidebarItem, setActiveSidebarItem] = useState("academic");
 
   useEffect(() => {
     if (!user || user.role !== "student") {
@@ -532,64 +659,76 @@ export default function StudentPage() {
 
   const studentSidebarItems = [
     {
-      id: "overview",
-      label: "Home Overview",
-      icon: Sparkles,
-      tooltip: "Campus overview & essentials",
-    },
-    {
-      id: "academics",
+      id: "academic",
       label: "Academic Snapshot",
       icon: BookOpen,
       badge: "82%",
-      tooltip: "Next class & attendance status",
+      tooltip: "Next class and attendance summary",
+      action: () => {
+        document.getElementById("academic-snapshot-section")?.scrollIntoView({ behavior: "smooth" });
+      },
     },
     {
       id: "radar",
       label: "Term Progress Radar",
       icon: Sparkles,
-      tooltip: "Skill and performance map",
+      tooltip: "Academic skill and performance map",
+      action: () => {
+        document.getElementById("performance-radar-section")?.scrollIntoView({ behavior: "smooth" });
+      },
     },
     {
       id: "safepath",
       label: "SafePath 3D Routing",
       icon: Map,
       badge: "3D Live",
-      tooltip: "Full 3D campus routing map",
+      tooltip: "Open 3D campus routing map",
+      action: () => setShowCampusMap(true),
     },
     {
       id: "nightwalk",
       label: "Night SafeWalk",
       icon: Moon,
-      badge: walkActive ? `${minutes}:${seconds}` : "10m",
-      badgeVariant: walkActive ? "highlight" : "emerald",
-      tooltip: "Live companion escort timer",
+      badge: "Timer",
+      tooltip: "Start companion safe walk timer",
+      action: () => setShowNightWalk(true),
+    },
+    {
+      id: "sos",
+      label: "Emergency SOS Beacon",
+      icon: ShieldAlert,
+      badge: isSOSActive ? "ACTIVE" : "Ready",
+      badgeVariant: isSOSActive ? "highlight" : "emerald",
+      tooltip: "Trigger campus security SOS alert",
+      action: () => setIsSOSActive((prev) => !prev),
     },
     {
       id: "assistant",
-      label: "Campus AI Assistant",
+      label: "Campus Assistant AI",
       icon: MessageSquare,
       badge: "Online",
-      tooltip: "Ask AI for routes, grades & study tips",
+      tooltip: "Ask Campus AI for routes, grades & study tips",
+      action: () => setIsChatOpen((prev) => !prev),
     },
     {
       id: "digital-id",
-      label: "Digital ID & Pass",
+      label: "Digital ID & Gate Pass",
       icon: QrCode,
-      tooltip: "Main Gate scanner pass",
+      tooltip: "Show Digital ID for Main Gate Scanner",
+      action: () => alert("Digital ID verified: Pass valid for Main Gate entry/exit."),
     },
     {
       id: "report",
       label: "Report Issue",
       icon: AlertCircle,
-      tooltip: "Log safety or facility issues",
+      tooltip: "Report safety or facility issue",
+      action: () => alert("Campus Facilities ticket window logged."),
     },
   ];
 
   return (
     <div className="student-app">
       <div className="student-shell" style={{ maxWidth: "1280px" }}>
-        {/* Header */}
         <header className="student-header">
           <div className="student-brand">
             <div className="student-brand-icon">
@@ -624,473 +763,148 @@ export default function StudentPage() {
         </header>
 
         <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", width: "100%" }}>
-          {/* Feature Sidebar */}
           <DashboardFeatureSidebar
             role="student"
             kicker="Student Hub"
             title="Features & Tools"
             items={studentSidebarItems}
-            activeItem={activeTab}
-            onSelectItem={setActiveTab}
-            footerTitle={isSOSActive ? "SOS Beacon Active" : "Safety Beacon Ready"}
-            footerText={
-              sosAck
-                ? `Dispatched: ${sosAck.officer}`
-                : "Direct link to Campus Security Command"
-            }
+            activeItem={activeSidebarItem}
+            onSelectItem={setActiveSidebarItem}
+            footerTitle="Safety Beacon Active"
+            footerText="Connected to Campus Security Command"
           />
 
-          {/* Main Dynamic View Content */}
-          <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
+          <motion.main
+            className="student-main"
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            style={{ flex: 1, maxWidth: "100%", width: "100%" }}
+          >
             {error && <p className="student-dashboard-error">{error}</p>}
 
-            {/* TAB: OVERVIEW (HOME) */}
-            {activeTab === "overview" && (
-              <motion.main
-                className="student-main"
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                style={{ margin: 0 }}
-              >
-                <section className="student-safety-section">
-                  <motion.div variants={itemVariants}>
-                    <h1>
-                      Welcome back, {user.name}{" "}
-                      <span className="student-wave">👋</span>
-                    </h1>
-                    <p>Your campus snapshot for today.</p>
-                  </motion.div>
-                  <motion.div variants={itemVariants}>
-                    <SwipeToSOS
-                      isSOSActive={isSOSActive}
-                      onActivateSOS={handleActivateSOS}
-                      onCancelSOS={handleCancelSOS}
-                      sosAck={sosAck}
-                    />
-                  </motion.div>
-                  <motion.div className="student-safety-grid" variants={itemVariants}>
-                    <button
-                      className="student-safety-card night-walk-card"
-                      type="button"
-                      onClick={() => setActiveTab("nightwalk")}
-                    >
-                      <span className="student-card-icon">
-                        <Moon size={24} />
-                      </span>
-                      <span className="student-card-copy">
-                        <strong>Night Walk</strong>
-                        <small>{walkActive ? "Active timer" : "Start timer"}</small>
-                      </span>
-                    </button>
-                    <button
-                      className="student-safety-card safepath-card"
-                      type="button"
-                      onClick={() => setActiveTab("safepath")}
-                    >
-                      <span className="student-card-icon">
-                        <Map size={24} />
-                      </span>
-                      <span className="student-card-copy">
-                        <strong>SafePath</strong>
-                        <small>Live 3D routing</small>
-                      </span>
-                    </button>
-                  </motion.div>
-                </section>
+            <section className="student-safety-section">
+              <motion.div variants={itemVariants}>
+                <h1>
+                  Welcome back, {user.name}{" "}
+                  <span className="student-wave">👋</span>
+                </h1>
+                <p>Your campus snapshot for today.</p>
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <SwipeToSOS
+                  isSOSActive={isSOSActive}
+                  setIsSOSActive={setIsSOSActive}
+                />
+              </motion.div>
+              <motion.div className="student-safety-grid" variants={itemVariants}>
+                <button
+                  className="student-safety-card night-walk-card"
+                  type="button"
+                  onClick={() => setShowNightWalk(true)}
+                >
+                  <span className="student-card-icon">
+                    <Moon size={24} />
+                  </span>
+                  <span className="student-card-copy">
+                    <strong>Night Walk</strong>
+                    <small>Start timer</small>
+                  </span>
+                </button>
+                <button
+                  className="student-safety-card safepath-card"
+                  type="button"
+                  onClick={() => setShowCampusMap(true)}
+                >
+                  <span className="student-card-icon">
+                    <Map size={24} />
+                  </span>
+                  <span className="student-card-copy">
+                    <strong>SafePath</strong>
+                    <small>Live 3D routing</small>
+                  </span>
+                </button>
+              </motion.div>
+            </section>
 
-                <motion.section className="student-snapshot" variants={itemVariants}>
-                  <h2>Academic Highlights</h2>
-                  <div className="student-next-class">
-                    <div className="student-next-icon">
-                      <BookOpen size={24} />
-                    </div>
-                    <div>
-                      <h3>{nextClass.title}</h3>
-                      <p>Starts in {nextClass.startsIn}</p>
-                      <span>
-                        <Map size={16} /> {nextClass.location}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="student-status-grid">
-                    <div className="student-status-card">
-                      <span>Attendance</span>
-                      <div>
-                        <strong>{dashboard.summary.attendance.value}</strong>
-                        <b className="status-safe">
-                          {dashboard.summary.attendance.status}
-                        </b>
-                      </div>
-                    </div>
-                    <div className="student-status-card">
-                      <span>Pending Fees</span>
-                      <div>
-                        <strong>{dashboard.summary.fees.value}</strong>
-                        <b className="status-cleared">
-                          {dashboard.summary.fees.status}
-                        </b>
-                      </div>
-                    </div>
-                  </div>
-                </motion.section>
-
-                <motion.section className="student-utilities" variants={itemVariants}>
-                  <button type="button" onClick={() => setActiveTab("report")}>
-                    <span className="utility-icon issue-icon">
-                      <AlertCircle size={24} />
-                    </span>
-                    <span>
-                      <strong>Report an Issue</strong>
-                      <small>Maintenance / Safety</small>
-                    </span>
-                    <ChevronRight size={20} />
-                  </button>
-                  <button type="button" onClick={() => setActiveTab("digital-id")}>
-                    <span className="utility-icon id-icon">
-                      <QrCode size={24} />
-                    </span>
-                    <span>
-                      <strong>Digital ID</strong>
-                      <small>Show at Main Gate</small>
-                    </span>
-                    <ChevronRight size={20} />
-                  </button>
-                </motion.section>
-              </motion.main>
-            )}
-
-            {/* TAB: ACADEMICS VIEW */}
-            {activeTab === "academics" && (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="dashboard-view-card"
-              >
-                <div className="dashboard-view-header" style={{ margin: 0 }}>
-                  <div className="dashboard-view-header-left">
-                    <div className="dashboard-view-header-icon">
-                      <BookOpen size={20} />
-                    </div>
-                    <div>
-                      <h2 className="dashboard-view-title">Academic Snapshot &amp; Timetable</h2>
-                      <p className="dashboard-view-subtitle">Today's lectures, attendance thresholds, and clearance records</p>
-                    </div>
-                  </div>
-                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
-                    <ArrowLeft size={14} /> Back to Overview
-                  </button>
+            <motion.section className="student-snapshot" id="academic-snapshot-section" variants={itemVariants}>
+              <h2>Academic Snapshot</h2>
+              <div className="student-next-class">
+                <div className="student-next-icon">
+                  <BookOpen size={24} />
                 </div>
-
-                <div className="student-next-class" style={{ background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)" }}>
-                  <div className="student-next-icon">
-                    <BookOpen size={28} />
-                  </div>
+                <div>
+                  <h3>{nextClass.title}</h3>
+                  <p>Starts in {nextClass.startsIn}</p>
+                  <span>
+                    <Map size={16} /> {nextClass.location}
+                  </span>
+                </div>
+              </div>
+              <div className="student-status-grid">
+                <div className="student-status-card">
+                  <span>Attendance</span>
                   <div>
-                    <h3>{nextClass.title}</h3>
-                    <p style={{ fontSize: "14px", color: "#065f46" }}>Starts in {nextClass.startsIn} · Instructor: Dr. Ramanathan</p>
-                    <span style={{ fontSize: "13px" }}>
-                      <Map size={16} /> Location: {nextClass.location}
-                    </span>
+                    <strong>{dashboard.summary.attendance.value}</strong>
+                    <b className="status-safe">
+                      {dashboard.summary.attendance.status}
+                    </b>
                   </div>
                 </div>
-
-                <div className="student-status-grid">
-                  <div className="student-status-card">
-                    <span>Overall Attendance</span>
-                    <div>
-                      <strong>{dashboard.summary.attendance.value}</strong>
-                      <b className="status-safe">{dashboard.summary.attendance.status} (Eligible for Exams)</b>
-                    </div>
-                  </div>
-                  <div className="student-status-card">
-                    <span>Tuition Fee Balance</span>
-                    <div>
-                      <strong>{dashboard.summary.fees.value}</strong>
-                      <b className="status-cleared">{dashboard.summary.fees.status} (Receipt #CB-8849)</b>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* TAB: PERFORMANCE RADAR VIEW */}
-            {activeTab === "radar" && (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="dashboard-view-card"
-              >
-                <div className="dashboard-view-header" style={{ margin: 0 }}>
-                  <div className="dashboard-view-header-left">
-                    <div className="dashboard-view-header-icon">
-                      <Sparkles size={20} />
-                    </div>
-                    <div>
-                      <h2 className="dashboard-view-title">Term Progress Radar</h2>
-                      <p className="dashboard-view-subtitle">Multidimensional academic skill &amp; assessment distribution</p>
-                    </div>
-                  </div>
-                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
-                    <ArrowLeft size={14} /> Back to Overview
-                  </button>
-                </div>
-                <PerformanceRadar />
-              </motion.div>
-            )}
-
-            {/* TAB: SAFEPATH 3D VIEW */}
-            {activeTab === "safepath" && (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="dashboard-view-card"
-              >
-                <div className="dashboard-view-header" style={{ margin: 0 }}>
-                  <div className="dashboard-view-header-left">
-                    <div className="dashboard-view-header-icon">
-                      <Map size={20} />
-                    </div>
-                    <div>
-                      <h2 className="dashboard-view-title">SafePath 3D Live Routing</h2>
-                      <p className="dashboard-view-subtitle">Dynamic spatial route generation avoiding active campus hazard corridors</p>
-                    </div>
-                  </div>
-                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
-                    <ArrowLeft size={14} /> Back to Overview
-                  </button>
-                </div>
-
-                <div className="student-map-route-controls" style={{ background: "#f8fafc", padding: "16px", borderRadius: "14px", border: "1px solid #e2e8f0" }}>
-                  <label>
-                    From
-                    <select value={start} onChange={(e) => setStart(e.target.value)}>
-                      {Object.keys(ROUTE_POINTS).map((node) => (
-                        <option key={node}>{node}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    To
-                    <select value={end} onChange={(e) => setEnd(e.target.value)}>
-                      {Object.keys(ROUTE_POINTS).map((node) => (
-                        <option key={node}>{node}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <div className="student-route-result">
-                    <strong>
-                      {route.length ? route.join(" -> ") : "No safe route found"}
-                    </strong>
-                    <span>
-                      {selectedIncident
-                        ? `${selectedIncident.type} active`
-                        : "Safe corridor established"}
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{ height: "420px", borderRadius: "16px", overflow: "hidden", border: "1px solid #cbd5e1" }}>
-                  <CampusHeatmap3D
-                    incidents={ROUTE_INCIDENTS}
-                    activeIncidentId={activeIncidentId}
-                    onIncidentSelect={setActiveIncidentId}
-                    routePath={routePath}
-                  />
-                </div>
-              </motion.div>
-            )}
-
-            {/* TAB: NIGHT WALK VIEW */}
-            {activeTab === "nightwalk" && (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="dashboard-view-card"
-              >
-                <div className="dashboard-view-header" style={{ margin: 0 }}>
-                  <div className="dashboard-view-header-left">
-                    <div className="dashboard-view-header-icon">
-                      <Moon size={20} />
-                    </div>
-                    <div>
-                      <h2 className="dashboard-view-title">Night SafeWalk Companion</h2>
-                      <p className="dashboard-view-subtitle">Automated timed journey tracker monitored by Campus Security Center</p>
-                    </div>
-                  </div>
-                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
-                    <ArrowLeft size={14} /> Back to Overview
-                  </button>
-                </div>
-
-                <div style={{ textAlign: "center", padding: "30px 20px", background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "white", borderRadius: "18px" }}>
-                  <Moon size={42} style={{ color: "#38bdf8", marginBottom: "10px" }} />
-                  <h3 style={{ fontSize: "20px", fontWeight: "800", margin: "0 0 6px" }}>
-                    {walkActive ? "SafeWalk Session Active" : "Start SafeWalk Journey"}
-                  </h3>
-                  <p style={{ color: "#94a3b8", fontSize: "13px", maxWidth: "460px", margin: "0 auto 20px" }}>
-                    If your timer expires before entering your security PIN, Campus Security patrol units are automatically alerted to your coordinates.
-                  </p>
-
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", padding: "12px 28px", background: "rgba(255,255,255,0.1)", borderRadius: "14px", fontSize: "28px", fontWeight: "900", color: "#38bdf8", marginBottom: "24px" }}>
-                    <Clock size={28} />
-                    <span>{minutes}:{seconds}</span>
-                  </div>
-
-                  <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
-                    {!walkActive ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTimeLeft(600);
-                          setWalkActive(true);
-                        }}
-                        style={{ padding: "12px 24px", background: "#059669", color: "white", border: "none", borderRadius: "12px", fontWeight: "750", cursor: "pointer", fontSize: "14px" }}
-                      >
-                        Start 10-Minute Walk
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setWalkActive(false)}
-                        style={{ padding: "12px 24px", background: "#38bdf8", color: "#0f172a", border: "none", borderRadius: "12px", fontWeight: "750", cursor: "pointer", fontSize: "14px" }}
-                      >
-                        Arrived Safely (End Session)
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* TAB: CAMPUS ASSISTANT AI VIEW */}
-            {activeTab === "assistant" && (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="dashboard-view-card"
-              >
-                <div className="dashboard-view-header" style={{ margin: 0 }}>
-                  <div className="dashboard-view-header-left">
-                    <div className="dashboard-view-header-icon">
-                      <MessageSquare size={20} />
-                    </div>
-                    <div>
-                      <h2 className="dashboard-view-title">Campus Assistant AI</h2>
-                      <p className="dashboard-view-subtitle">Intelligent student assistant for course advice, study tips and campus safety</p>
-                    </div>
-                  </div>
-                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
-                    <ArrowLeft size={14} /> Back to Overview
-                  </button>
-                </div>
-                <EmbeddedChatAssistant studentName={user.name} greeting={dashboard.assistant?.greeting} />
-              </motion.div>
-            )}
-
-            {/* TAB: DIGITAL ID VIEW */}
-            {activeTab === "digital-id" && (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="dashboard-view-card"
-              >
-                <div className="dashboard-view-header" style={{ margin: 0 }}>
-                  <div className="dashboard-view-header-left">
-                    <div className="dashboard-view-header-icon">
-                      <QrCode size={20} />
-                    </div>
-                    <div>
-                      <h2 className="dashboard-view-title">Digital Student ID &amp; Gate Pass</h2>
-                      <p className="dashboard-view-subtitle">NFC &amp; QR verification for Main Gate and Campus Library scanners</p>
-                    </div>
-                  </div>
-                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
-                    <ArrowLeft size={14} /> Back to Overview
-                  </button>
-                </div>
-
-                <div style={{ maxWidth: "380px", margin: "0 auto", padding: "24px", background: "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)", borderRadius: "20px", border: "2px solid #a7f3d0", boxShadow: "0 12px 30px rgba(5, 150, 105, 0.12)", textAlign: "center" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
-                    <span style={{ fontWeight: "800", color: "#065f46", fontSize: "14px" }}>CAMPUS OS DIGITAL ID</span>
-                    <span style={{ background: "#d1fae5", color: "#047857", fontSize: "11px", fontWeight: "800", padding: "3px 8px", borderRadius: "999px" }}>ACTIVE</span>
-                  </div>
-
-                  <img
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || "Student")}&backgroundColor=f8fafc`}
-                    alt="Student ID photo"
-                    style={{ width: "96px", height: "96px", borderRadius: "50%", margin: "0 auto 12px", border: "3px solid #10b981" }}
-                  />
-
-                  <h3 style={{ fontSize: "18px", fontWeight: "850", color: "#0f172a", margin: "0 0 4px" }}>{user.name}</h3>
-                  <p style={{ color: "#64748b", fontSize: "12px", margin: "0 0 16px" }}>Register No: {user.registerNumber || "26BCE1123"} · B.Tech CSE</p>
-
-                  <div style={{ background: "white", padding: "16px", borderRadius: "12px", border: "1px dashed #94a3b8", display: "inline-block", marginBottom: "14px" }}>
-                    <QrCode size={128} color="#0f172a" />
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", color: "#059669", fontSize: "12px", fontWeight: "700" }}>
-                    <UserCheck size={16} /> Verified Campus Resident Pass
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* TAB: REPORT ISSUE VIEW */}
-            {activeTab === "report" && (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="dashboard-view-card"
-              >
-                <div className="dashboard-view-header" style={{ margin: 0 }}>
-                  <div className="dashboard-view-header-left">
-                    <div className="dashboard-view-header-icon">
-                      <AlertCircle size={20} />
-                    </div>
-                    <div>
-                      <h2 className="dashboard-view-title">Report Maintenance / Safety Issue</h2>
-                      <p className="dashboard-view-subtitle">Direct dispatch ticket to Campus Security and Facility Maintenance</p>
-                    </div>
-                  </div>
-                  <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
-                    <ArrowLeft size={14} /> Back to Overview
-                  </button>
-                </div>
-
-                <form onSubmit={(e) => { e.preventDefault(); alert("Issue reported successfully to Campus Operations."); setActiveTab("overview"); }} style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "560px" }}>
+                <div className="student-status-card">
+                  <span>Pending Fees</span>
                   <div>
-                    <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Category</label>
-                    <select className="adm-select" style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #cbd5e1" }}>
-                      <option>Hostel Safety &amp; Lighting</option>
-                      <option>Classroom Equipment / Lab PC</option>
-                      <option>Pathway Hazard / Construction</option>
-                      <option>Suspicious Activity Report</option>
-                    </select>
+                    <strong>{dashboard.summary.fees.value}</strong>
+                    <b className="status-cleared">
+                      {dashboard.summary.fees.status}
+                    </b>
                   </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Location</label>
-                    <input type="text" placeholder="e.g. Block B, 3rd Floor Water Station" required style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #cbd5e1", boxSizing: "border-box" }} />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Description</label>
-                    <textarea rows={4} placeholder="Describe the issue in detail..." required style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #cbd5e1", boxSizing: "border-box" }} />
-                  </div>
-                  <button type="submit" style={{ padding: "12px 20px", background: "#059669", color: "white", border: "none", borderRadius: "10px", fontWeight: "750", cursor: "pointer", width: "fit-content" }}>
-                    Submit Ticket
-                  </button>
-                </form>
-              </motion.div>
-            )}
-          </div>
+                </div>
+              </div>
+              <PerformanceRadar />
+            </motion.section>
+
+            <motion.section className="student-utilities" variants={itemVariants}>
+              <button type="button" onClick={() => alert("Campus Facilities ticket window logged.")}>
+                <span className="utility-icon issue-icon">
+                  <AlertCircle size={24} />
+                </span>
+                <span>
+                  <strong>Report an Issue</strong>
+                  <small>Maintenance / Safety</small>
+                </span>
+                <ChevronRight size={20} />
+              </button>
+              <button type="button" onClick={() => alert("Digital ID verified for Main Gate Scanner.")}>
+                <span className="utility-icon id-icon">
+                  <QrCode size={24} />
+                </span>
+                <span>
+                  <strong>Digital ID</strong>
+                  <small>Show at Main Gate</small>
+                </span>
+                <ChevronRight size={20} />
+              </button>
+            </motion.section>
+          </motion.main>
         </div>
+
+        <ChatAssistant
+          studentName={user.name}
+          greeting={dashboard.assistant?.greeting}
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+          dashboard={dashboard}
+        />
+
+        <AnimatePresence>
+          {showNightWalk && (
+            <NightWalkModal onClose={() => setShowNightWalk(false)} />
+          )}
+          {showCampusMap && (
+            <StudentCampusMapModal onClose={() => setShowCampusMap(false)} />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
