@@ -22,6 +22,13 @@ import {
 import { useNavigate } from "react-router-dom";
 import { fetchDashboard } from "../utils/dashboardApi";
 import { clearSession, getSessionUser } from "../utils/authStorage";
+import {
+  publishStudentSOS,
+  cancelStudentSOS,
+  subscribeEmergencyEvents,
+  getActiveSOSEvent,
+  getActiveACKEvent,
+} from "../utils/emergencyBridge";
 import CampusHeatmap3D from "../components/CampusHeatmap3D";
 import DashboardFeatureSidebar from "../components/common/DashboardFeatureSidebar";
 import "../styles/student-dashboard.css";
@@ -195,7 +202,7 @@ function PerformanceRadar() {
   );
 }
 
-function SwipeToSOS({ isSOSActive, setIsSOSActive }) {
+function SwipeToSOS({ isSOSActive, onActivateSOS, onCancelSOS, sosAck }) {
   const containerRef = useRef(null);
   const dragControls = useAnimation();
   const [isDragging, setIsDragging] = useState(false);
@@ -203,12 +210,14 @@ function SwipeToSOS({ isSOSActive, setIsSOSActive }) {
   const handleDragEnd = (event, info) => {
     setIsDragging(false);
     const containerWidth = containerRef.current?.offsetWidth || 0;
-    if (info.offset.x >= containerWidth - 92) setIsSOSActive(true);
-    else
+    if (info.offset.x >= containerWidth - 92) {
+      onActivateSOS();
+    } else {
       dragControls.start({
         x: 0,
         transition: { type: "spring", stiffness: 400, damping: 25 },
       });
+    }
   };
 
   if (isSOSActive)
@@ -219,23 +228,40 @@ function SwipeToSOS({ isSOSActive, setIsSOSActive }) {
         animate={{
           scale: 1,
           opacity: 1,
-          backgroundColor: ["#ef4444", "#b91c1c", "#ef4444"],
+          backgroundColor: sosAck
+            ? ["#065f46", "#047857", "#065f46"]
+            : ["#ef4444", "#b91c1c", "#ef4444"],
         }}
         transition={{
           backgroundColor: { repeat: Infinity, duration: 1.5 },
           scale: { type: "spring" },
         }}
+        style={{ padding: "24px 20px" }}
       >
         <div className="sos-overlay" />
         <ShieldAlert size={48} className="sos-content sos-pulse" />
-        <div className="sos-content">
-          <h3>SOS BROADCASTED</h3>
-          <p>Campus Security has been dispatched to your location.</p>
+        <div className="sos-content" style={{ textAlign: "center" }}>
+          <h3 style={{ fontSize: "20px", fontWeight: "900", letterSpacing: "0.05em", margin: "0 0 6px" }}>
+            {sosAck ? "✅ ACKNOWLEDGED BY SECURITY COMMAND" : "🚨 EMERGENCY SOS BROADCASTED"}
+          </h3>
+          <p style={{ margin: "0 0 12px", fontSize: "13px", opacity: 0.95 }}>
+            {sosAck
+              ? sosAck.message || "Patrol Unit has been dispatched to your location."
+              : "Transmitting emergency coordinates to Security Command Center..."}
+          </p>
+
+          {sosAck && (
+            <div style={{ background: "rgba(255,255,255,0.18)", padding: "10px 16px", borderRadius: "12px", marginBottom: "14px", display: "inline-flex", flexDirection: "column", gap: "4px", border: "1px solid rgba(255,255,255,0.3)" }}>
+              <div style={{ fontSize: "13px", fontWeight: "800" }}>👮 {sosAck.officer}</div>
+              <div style={{ fontSize: "12px", color: "#a7f3d0" }}>⏱️ Estimated Arrival: {sosAck.eta || "2 mins"} · Stay where you are</div>
+            </div>
+          )}
         </div>
         <button
           className="sos-cancel sos-content"
           type="button"
-          onClick={() => setIsSOSActive(false)}
+          onClick={onCancelSOS}
+          style={{ cursor: "pointer" }}
         >
           Cancel False Alarm
         </button>
@@ -388,6 +414,8 @@ export default function StudentPage() {
   const [dashboard, setDashboard] = useState(defaultDashboard);
   const [error, setError] = useState("");
   const [isSOSActive, setIsSOSActive] = useState(false);
+  const [activeSosId, setActiveSosId] = useState(null);
+  const [sosAck, setSosAck] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
 
   // SafePath State
@@ -416,6 +444,53 @@ export default function StudentPage() {
     .toString()
     .padStart(2, "0");
   const seconds = (timeLeft % 60).toString().padStart(2, "0");
+
+  // Emergency Bridge Subscription for SOS Acknowledgement
+  useEffect(() => {
+    const existingSOS = getActiveSOSEvent();
+    if (existingSOS && existingSOS.status === "ACTIVE") {
+      setIsSOSActive(true);
+      setActiveSosId(existingSOS.id);
+    }
+    const existingAck = getActiveACKEvent();
+    if (existingAck) {
+      setSosAck(existingAck);
+    }
+
+    const unsubscribe = subscribeEmergencyEvents((event) => {
+      if (event.type === "SECURITY_ACK_TRIGGERED") {
+        setSosAck(event.payload);
+      } else if (event.type === "STUDENT_SOS_CANCELLED") {
+        setIsSOSActive(false);
+        setActiveSosId(null);
+        setSosAck(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleActivateSOS = () => {
+    const newSosId = `SOS-${Date.now()}`;
+    setActiveSosId(newSosId);
+    setIsSOSActive(true);
+    setSosAck(null);
+    publishStudentSOS({
+      id: newSosId,
+      studentName: user.name || "Student",
+      studentId: user.registerNumber || "26BCE1123",
+      location: "Academic Block B (Near Lab 302)",
+    });
+  };
+
+  const handleCancelSOS = () => {
+    if (activeSosId) {
+      cancelStudentSOS(activeSosId);
+    }
+    setIsSOSActive(false);
+    setActiveSosId(null);
+    setSosAck(null);
+  };
 
   useEffect(() => {
     if (!user || user.role !== "student") {
@@ -557,8 +632,12 @@ export default function StudentPage() {
             items={studentSidebarItems}
             activeItem={activeTab}
             onSelectItem={setActiveTab}
-            footerTitle="Safety Beacon Ready"
-            footerText="Direct link to Campus Security"
+            footerTitle={isSOSActive ? "SOS Beacon Active" : "Safety Beacon Ready"}
+            footerText={
+              sosAck
+                ? `Dispatched: ${sosAck.officer}`
+                : "Direct link to Campus Security Command"
+            }
           />
 
           {/* Main Dynamic View Content */}
@@ -585,7 +664,9 @@ export default function StudentPage() {
                   <motion.div variants={itemVariants}>
                     <SwipeToSOS
                       isSOSActive={isSOSActive}
-                      setIsSOSActive={setIsSOSActive}
+                      onActivateSOS={handleActivateSOS}
+                      onCancelSOS={handleCancelSOS}
+                      sosAck={sosAck}
                     />
                   </motion.div>
                   <motion.div className="student-safety-grid" variants={itemVariants}>

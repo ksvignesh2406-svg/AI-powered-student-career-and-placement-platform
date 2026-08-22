@@ -14,6 +14,11 @@ import {
   Video,
 } from "lucide-react";
 import { clearSession, getSessionUser } from "../utils/authStorage";
+import {
+  subscribeEmergencyEvents,
+  sendSecurityAcknowledgement,
+  getActiveSOSEvent,
+} from "../utils/emergencyBridge";
 
 import SecurityHeader from "../components/security/SecurityHeader";
 import SecurityBanner from "../components/security/SecurityBanner";
@@ -141,7 +146,7 @@ export default function SecurityPage() {
 
   const flash = (msg) => {
     setNotice(msg);
-    setTimeout(() => setNotice(""), 3000);
+    setTimeout(() => setNotice(""), 4000);
   };
 
   useEffect(() => {
@@ -150,12 +155,14 @@ export default function SecurityPage() {
     }
   }, [navigate, user]);
 
+  // Live Clock Ticker
   useEffect(() => {
     setTime(new Date());
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  // Countdown timers for Night Walks
   useEffect(() => {
     const timer = setInterval(() => {
       setNightWalks((prev) =>
@@ -169,6 +176,71 @@ export default function SecurityPage() {
       );
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Emergency Bridge: Listen for Student SOS activations & cancellations
+  useEffect(() => {
+    const activeSos = getActiveSOSEvent();
+    if (activeSos && activeSos.status === "ACTIVE") {
+      const existingAlert = {
+        id: activeSos.id,
+        priority: "URGENT",
+        title: `🚨 EMERGENCY SOS: ${activeSos.studentName}`,
+        category: "Emergency SOS",
+        location: activeSos.location,
+        time: "Just now",
+        timestamp: activeSos.timestamp,
+        description: `Emergency distress beacon activated by ${activeSos.studentName} (${activeSos.studentId}) at ${activeSos.location}. Unit Alpha assigned.`,
+        status: "Pending",
+        reporter: `${activeSos.studentName} (${activeSos.studentId})`,
+      };
+      setAlerts((prev) => [existingAlert, ...prev.filter((a) => a.id !== activeSos.id)]);
+      setSelectedAlert(existingAlert);
+    }
+
+    const unsubscribe = subscribeEmergencyEvents((event) => {
+      if (event.type === "STUDENT_SOS_ACTIVATED") {
+        const newSosAlert = {
+          id: event.payload.id,
+          priority: "URGENT",
+          title: `🚨 EMERGENCY SOS: ${event.payload.studentName}`,
+          category: "Emergency SOS",
+          location: event.payload.location,
+          time: "Just now",
+          timestamp: Date.now(),
+          description: `Emergency distress beacon activated by ${event.payload.studentName} (${event.payload.studentId}) at ${event.payload.location}. Unit Alpha assigned.`,
+          status: "Pending",
+          reporter: `${event.payload.studentName} (${event.payload.studentId})`,
+        };
+
+        setAlerts((prev) => [newSosAlert, ...prev.filter((a) => a.id !== event.payload.id)]);
+        setSelectedAlert(newSosAlert);
+        flash(`🚨 EMERGENCY SOS from ${event.payload.studentName} at ${event.payload.location}! Immediate Acknowledgement Dispatched.`);
+
+        // Immediately trigger automated acknowledgement back to student dashboard!
+        sendSecurityAcknowledgement({
+          sosId: event.payload.id,
+          officer: "Officer Suresh Kumar (Patrol Unit Alpha)",
+          eta: "2 mins",
+          message: `Campus Security Command has verified your distress signal. Officer Suresh Kumar is rushing to ${event.payload.location} (ETA ~2 mins). Please stay where you are.`,
+        });
+      } else if (event.type === "STUDENT_SOS_CANCELLED") {
+        setAlerts((prev) =>
+          prev.map((a) =>
+            a.id === event.payload.id
+              ? {
+                  ...a,
+                  status: "Resolved",
+                  title: a.title.replace("🚨 ", "") + " (Cancelled by Student)",
+                }
+              : a
+          )
+        );
+        flash(`SOS #${event.payload.id} was marked false alarm & cleared by the student.`);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const formattedTime = time
@@ -198,7 +270,17 @@ export default function SecurityPage() {
         prev ? { ...prev, status: "Assigned" } : null
       );
     }
-    flash(`Guard dispatched for incident #${id}`);
+
+    // Send updated acknowledgement packet to student
+    sendSecurityAcknowledgement({
+      sosId: id,
+      officer: "Officer Suresh Kumar (Unit Alpha)",
+      eta: "1 min",
+      message:
+        "Patrol Unit Alpha has reached your building entrance and is proceeding to your floor.",
+    });
+
+    flash(`Guard dispatched & live update sent to student dashboard for incident #${id}`);
   };
 
   const handleLogout = () => {
@@ -324,8 +406,8 @@ export default function SecurityPage() {
             items={securitySidebarItems}
             activeItem={activeTab}
             onSelectItem={setActiveTab}
-            footerTitle="Perimeter Secure"
-            footerText="All 4 campus gate scanners operational"
+            footerTitle="Emergency Relay Active"
+            footerText="Connected to Student SOS Beacons"
           />
 
           {/* Dynamic Main Workspace */}
@@ -357,7 +439,7 @@ export default function SecurityPage() {
                     </div>
                     <div>
                       <h2 className="dashboard-view-title">Emergency SOS &amp; Incident Triage Queue</h2>
-                      <p className="dashboard-view-subtitle">Live dispatcher queue for escort calls and distress signals</p>
+                      <p className="dashboard-view-subtitle">Live dispatcher queue with instant auto-acknowledgement and guard dispatch</p>
                     </div>
                   </div>
                   <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>
