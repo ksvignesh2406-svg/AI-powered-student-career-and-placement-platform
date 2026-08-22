@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { fetchDashboard } from "../utils/dashboardApi";
+import { fetchDashboard, askCampusAI } from "../utils/dashboardApi";
 import { clearSession, getSessionUser } from "../utils/authStorage";
 import {
   publishStudentSOS,
@@ -312,44 +312,25 @@ function EmbeddedChatAssistant({ studentName, greeting, studentData }) {
     const apiUrl = import.meta.env.VITE_AI_API_URL;
     try {
       let answer;
-      if (apiUrl) {
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: "system",
-                content:
-                  `You are Campus Assistant AI, an intelligent campus companion for a student named ${studentName || "the student"} on the Campus OS platform.
-You have access to their live academic data: attendance ${studentData?.attendance || "82%"}, CGPA ${studentData?.cgpa || "N/A"}, mentor: ${studentData?.mentor || "Unassigned"}.
-You can help with: course advice, study planning, safe campus routes, exam preparation tips, fee queries, placement guidance, mental health resources, and campus navigation.
-Be concise, warm, and actionable. Use bullet points when listing things. Always encourage the student.`,
-              },
-              ...messages.map((m) => ({ role: m.role, content: m.text })),
-              { role: "user", content: prompt },
-            ],
-          }),
-        });
-
-        if (!response.ok) throw new Error("AI request failed");
-        const data = await response.json();
-        answer = data.choices?.[0]?.message?.content || data.message || data.response;
-        if (!answer) throw new Error("AI response was empty");
+      const res = await askCampusAI(prompt, {
+          studentName,
+          attendance: studentData?.attendance || "82%",
+          cgpa: studentData?.cgpa || "N/A",
+          mentor: studentData?.mentor || "Unassigned"
+      });
+      if (res && !res.error && res.response) {
+          answer = res.response;
       } else {
-        const normalizedPrompt = prompt.toLowerCase();
-        if (normalizedPrompt.includes("ghost") || normalizedPrompt.includes("timer")) {
-          answer =
-            "There are 2 active night-walk timers. One escort is delayed near the Science Block and security has been notified.";
-        } else if (normalizedPrompt.includes("route") || normalizedPrompt.includes("safepath")) {
-          const route = calculateSafeRoute("Main Gate", "Dorm A", ROUTE_INCIDENTS);
-          answer = `SafePath calculated around active incidents: ${route.join(
-            " -> "
-          )}. Open SafePath to view the route on the 3D map.`;
-        } else {
-          answer =
-            "Your strongest area is projects at 88%. Try a short exam revision session next; exams are currently your biggest opportunity at 71%.";
-        }
+          // Fallback to static rules if API fails or isn't set up yet
+          const normalizedPrompt = prompt.toLowerCase();
+          if (normalizedPrompt.includes("ghost") || normalizedPrompt.includes("timer")) {
+            answer = "There are 2 active night-walk timers. One escort is delayed near the Science Block and security has been notified.";
+          } else if (normalizedPrompt.includes("route") || normalizedPrompt.includes("safepath")) {
+            const route = calculateSafeRoute("Main Gate", "Dorm A", ROUTE_INCIDENTS);
+            answer = `SafePath calculated around active incidents: ${route.join(" -> ")}. Open SafePath to view the route on the 3D map.`;
+          } else {
+            answer = "Your strongest area is projects at 88%. Try a short exam revision session next; exams are currently your biggest opportunity at 71%.";
+          }
       }
       setMessages((current) => [...current, { role: "assistant", text: answer }]);
     } catch {
