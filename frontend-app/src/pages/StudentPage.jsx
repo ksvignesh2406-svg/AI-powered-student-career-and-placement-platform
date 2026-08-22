@@ -70,26 +70,30 @@ const defaultDashboard = {
 };
 
 const ROUTE_GRAPH = {
-  "Main Gate": { "Student Center": 8, Library: 13 },
-  "Student Center": { "Main Gate": 8, Library: 7, "Science Block": 8, "Dorm A": 6 },
-  Library: { "Main Gate": 13, "Student Center": 7, "Science Block": 9 },
-  "Science Block": { "Student Center": 8, Library: 9, "Dorm A": 12, Parking: 10 },
-  "Dorm A": { "Student Center": 6, "Science Block": 12, Parking: 8 },
-  Parking: { "Science Block": 10, "Dorm A": 8 },
+  "Main Gate": { "International Library": 13, "Students Community Centre": 18 },
+  "International Library": { "Main Gate": 13, "Students Community Centre": 14, "Mechanical Engg": 17, "Kamakshi Hostel": 31 },
+  "Students Community Centre": { "Main Gate": 18, "International Library": 14, "Administrative Block": 15, "Annapoorani Hostel": 17 },
+  "Mechanical Engg": { "International Library": 17, "Administrative Block": 26, "Play Ground": 30 },
+  "Kamakshi Hostel": { "International Library": 31, "Annapoorani Hostel": 27, "Students Community Centre": 18 },
+  "Annapoorani Hostel": { "Students Community Centre": 17, "Kamakshi Hostel": 27, "Administrative Block": 20 },
+  "Administrative Block": { "Students Community Centre": 15, "Annapoorani Hostel": 20, "Mechanical Engg": 26 },
+  "Play Ground": { "Mechanical Engg": 30, "Main Gate": 60 },
 };
 
 const ROUTE_POINTS = {
-  "Main Gate": [0, -15],
-  "Student Center": [0, 2],
-  Library: [4, -3],
-  "Science Block": [6, 5],
-  "Dorm A": [-6, 6],
-  Parking: [15, 10],
+  "Main Gate": [45, 35],
+  "International Library": [10, -5],
+  "Students Community Centre": [-15, 10],
+  "Mechanical Engg": [0, -22],
+  "Kamakshi Hostel": [-5, 25],
+  "Annapoorani Hostel": [-30, 15],
+  "Administrative Block": [-15, -5],
+  "Play Ground": [30, -25],
 };
 
 const ROUTE_INCIDENTS = [
-  { id: "INC-001", x: -5.5, z: 6.5, intensity: 3.6, type: "Unauthorized Access", location: "Dorm A" },
-  { id: "INC-002", x: 3, z: -2, intensity: 1.8, type: "Motion Sensor", location: "Library" },
+  { id: "INC-001", x: -5, z: 25, intensity: 3.6, type: "Unauthorized Access", location: "Kamakshi Hostel" },
+  { id: "INC-002", x: 10, z: -5, intensity: 1.8, type: "Motion Sensor", location: "International Library" },
 ];
 
 function calculateSafeRoute(start, end, incidents) {
@@ -326,7 +330,7 @@ function EmbeddedChatAssistant({ studentName, greeting, studentData }) {
           if (normalizedPrompt.includes("ghost") || normalizedPrompt.includes("timer")) {
             answer = "There are 2 active night-walk timers. One escort is delayed near the Science Block and security has been notified.";
           } else if (normalizedPrompt.includes("route") || normalizedPrompt.includes("safepath")) {
-            const route = calculateSafeRoute("Main Gate", "Dorm A", ROUTE_INCIDENTS);
+            const route = calculateSafeRoute("Main Gate", "Kamakshi Hostel", ROUTE_INCIDENTS);
             answer = `SafePath calculated around active incidents: ${route.join(" -> ")}. Open SafePath to view the route on the 3D map.`;
           } else {
             answer = "Your strongest area is projects at 88%. Try a short exam revision session next; exams are currently your biggest opportunity at 71%.";
@@ -404,7 +408,7 @@ export default function StudentPage() {
 
   // SafePath State
   const [start, setStart] = useState("Main Gate");
-  const [end, setEnd] = useState("Dorm A");
+  const [end, setEnd] = useState("Kamakshi Hostel");
   const [activeIncidentId, setActiveIncidentId] = useState(null);
   const route = calculateSafeRoute(start, end, ROUTE_INCIDENTS);
   const routePath = route.map((node) => ROUTE_POINTS[node]);
@@ -1005,7 +1009,7 @@ export default function StudentPage() {
                     </div>
                     <div>
                       <h2 className="dashboard-view-title">Digital Student ID &amp; Gate Pass</h2>
-                      <p className="dashboard-view-subtitle">NFC &amp; QR verification for Main Gate and Campus Library scanners</p>
+                      <p className="dashboard-view-subtitle">NFC &amp; QR verification for Main Gate and International Library scanners</p>
                     </div>
                   </div>
                   <button type="button" className="dashboard-back-btn" onClick={() => setActiveTab("overview")}>

@@ -1,4 +1,4 @@
-const { generateAIResponse } = require("../services/groqServices");
+const { generateAIResponse } = require("../services/geminiServices");
 
 const analyzeWithAI = async (req, res) => {
     try {
@@ -36,9 +36,9 @@ ${JSON.stringify(context || {})}
             }
         ];
 
-        if (!process.env.GROQ_API_KEY) {
+        if (!process.env.GEMINI_API_KEY) {
             const lastUserMsg = message.toLowerCase();
-            let mockResponse = "I am your AI Campus companion. (Mock Mode: Add GROQ_API_KEY in backend/.env for real AI)";
+            let mockResponse = "I am your AI Campus companion. (Mock Mode: Add GEMINI_API_KEY in backend/.env for real AI)";
 
             if (lastUserMsg.includes("attendance")) {
                 mockResponse = `Based on your context, attendance is ${context.attendance || "82%"}. Keep attending classes to maintain eligibility!`;

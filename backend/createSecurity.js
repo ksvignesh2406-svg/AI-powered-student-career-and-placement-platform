@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ override: true });
 
 const bcrypt = require("bcryptjs");
 const { sequelize } = require("./src/config/db");
@@ -8,17 +8,19 @@ const createSecurity = async () => {
     try {
         await sequelize.authenticate();
 
-        const hashedPassword = await bcrypt.hash("rahul123", 10);
-
-        await User.create({
-            name: "Rahul",
-            email: "rahul@vitsec.ac.in",
-            password: hashedPassword,
-            role: "SECURITY",
-            isActive: true
+        const hashedPassword = await bcrypt.hash("rahul123", 12);
+        const [security, created] = await User.findOrCreate({
+            where: { email: "rahul@vitsec.ac.in" },
+            defaults: {
+                name: "Rahul",
+                password: hashedPassword,
+                role: "SECURITY",
+                isActive: true
+            }
         });
+        if (!created) await security.update({ name: "Rahul", password: hashedPassword, role: "SECURITY", isActive: true });
 
-        console.log("Security user created successfully");
+        console.log(`Security user ${created ? "created" : "updated"} successfully`);
 
         await sequelize.close();
 

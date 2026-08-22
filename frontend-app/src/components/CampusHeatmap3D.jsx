@@ -1,219 +1,233 @@
 import { useMemo, useRef } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { Html, Line, OrbitControls } from "@react-three/drei";
+import { AlertTriangle, Camera, Flame, Map, Navigation, User, Users } from "lucide-react";
 import * as THREE from "three";
-import { OrbitControls as ThreeOrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-const MAX_INCIDENTS = 20;
-
-const CAMPUS_INCIDENTS = [
-  { id: 1, x: 12, z: -8, intensity: 3.5, type: "Unauthorized Access" },
-  { id: 2, x: -18, z: 15, intensity: 2.1, type: "Perimeter Breach" },
-  { id: 3, x: 5, z: 25, intensity: 1.8, type: "Suspicious Activity" },
-  { id: 4, x: -22, z: -18, intensity: 4.2, type: "Fire Alarm" },
-  { id: 5, x: 28, z: 10, intensity: 1.5, type: "Network Anomaly" },
-  { id: 6, x: 2, z: -2, intensity: 2.8, type: "Access Denied" },
+const BUILDINGS = [
+  { id: "admin", name: "Administrative Block", x: -15, z: -5, width: 14, depth: 8, height: 10, type: "academic" },
+  { id: "it", name: "IT Block", x: -25, z: -25, width: 16, depth: 10, height: 12, type: "academic" },
+  { id: "library", name: "International Library", x: 10, z: -5, width: 12, depth: 8, height: 9, type: "academic" },
+  { id: "mechanical", name: "Mechanical Engg", x: 0, z: -22, width: 10, depth: 15, height: 10, type: "academic" },
+  { id: "annapoorani", name: "Annapoorani Hostel", x: -30, z: 15, width: 18, depth: 10, height: 14, type: "hostel" },
+  { id: "kamakshi", name: "Kamakshi Hostel", x: -5, z: 25, width: 8, depth: 16, height: 12, type: "hostel" },
+  { id: "gate", name: "Main Gate", x: 45, z: 35, width: 4, depth: 2, height: 5, type: "utility" },
+  { id: "community", name: "Students Community Centre", x: -15, z: 10, width: 8, depth: 6, height: 6, type: "utility" },
+  { id: "ground", name: "Play Ground", x: 30, z: -25, width: 25, depth: 25, height: 0.2, type: "park", shape: "cylinder" },
 ];
 
-function generateCampusLayout() {
-  const buildings = [{ x: 0, z: 0, w: 12, d: 12, h: 1.5, type: "core" }];
-  const academicRadius = 20;
+const DEFAULT_INCIDENTS = [
+  { id: "inc-1", title: "Unauthorized Access", x: -25, z: -20, severity: "high" },
+  { id: "inc-2", title: "Crowd Gathering", x: -10, z: 5, severity: "medium" },
+];
+const GUARDS = [
+  { id: "guard-1", name: "Officer M. Suren", x: 35, z: 25, status: "patrolling" },
+  { id: "guard-2", name: "Officer J. Smith", x: -20, z: 5, status: "stationary" },
+  { id: "guard-3", name: "Officer A. Chen", x: 15, z: -15, status: "patrolling" },
+];
+const CAMERAS = [
+  { id: "camera-1", name: "Cam-Gate-01", x: 42, z: 32, status: "working", heading: Math.PI / 4 },
+  { id: "camera-2", name: "Cam-Admin-02", x: -5, z: 0, status: "working", heading: -Math.PI / 2 },
+  { id: "camera-3", name: "Cam-Hostel-03", x: -20, z: 25, status: "broken", heading: Math.PI },
+  { id: "camera-4", name: "Cam-Play-04", x: 15, z: -20, status: "working", heading: Math.PI / 1.5 },
+];
+const PHYSICAL_ROADS = [
+  [[45, 35], [15, 35]],
+  [[15, 35], [15, -30]],
+  [[25, 5], [-35, 5]],
+  [[-22, 20], [-22, -30]],
+  [[15, -25], [-25, -25]],
+];
+const DEFAULT_ROUTE = [[45, 35], [15, 35], [15, 5], [-22, 5], [-22, -25], [-25, -25]];
+const POPULATION_ZONES = [
+  { id: "library-density", x: 10, z: -5, radius: 18, intensity: 0.42, type: "population" },
+  { id: "community-density", x: -15, z: 10, radius: 12, intensity: 0.34, type: "population" },
+];
 
-  for (let index = 0; index < 10; index += 1) {
-    const angle = (index / 10) * Math.PI * 2;
-    buildings.push({
-      x: Math.cos(angle) * academicRadius,
-      z: Math.sin(angle) * academicRadius,
-      w: 4 + (index % 3),
-      d: 4 + ((index + 1) % 3),
-      h: 15 + Math.sin(index * 1.5) * 8,
-      type: "academic",
-    });
-  }
+const labelStyle = {
+  background: "rgba(255, 255, 255, 0.97)", border: "1px solid #94a3b8", borderRadius: "6px", boxShadow: "0 3px 12px rgba(15, 23, 42, 0.2)",
+  color: "#0f172a", fontFamily: "system-ui, sans-serif", fontSize: "14px", fontWeight: 750, lineHeight: 1.2, padding: "5px 8px", pointerEvents: "none", textShadow: "0 1px 0 rgba(255,255,255,.8)", whiteSpace: "nowrap",
+};
 
-  for (let index = 0; index < 25; index += 1) {
-    const angle = (index / 25) * Math.PI * 2 * 3;
-    const radius = 35 + (index % 15);
-    buildings.push({
-      x: Math.cos(angle) * radius,
-      z: Math.sin(angle) * radius,
-      w: 3,
-      d: 3,
-      h: 4 + (index % 6),
-      type: "residential",
-    });
-  }
-
-  return buildings;
+function Building({ building, showLabels }) {
+  const color = { academic: "#f8fafc", hostel: "#fff1f2", utility: "#f0fdf4", park: "#dcfce7" }[building.type] || "#f1f5f9";
+  return <group position={[building.x, building.height / 2, building.z]}>
+    <mesh castShadow receiveShadow>
+      {building.shape === "cylinder" ? <cylinderGeometry args={[building.width / 2, building.width / 2, building.height, 32]} /> : <boxGeometry args={[building.width, building.height, building.depth]} />}
+      <meshStandardMaterial color={color} roughness={0.82} metalness={0.08} />
+    </mesh>
+    {showLabels && <Html position={[0, building.height / 2 + 1.2, 0]} center transform sprite distanceFactor={12} zIndexRange={[10, 0]}><div style={labelStyle}>{building.name}</div></Html>}
+  </group>;
 }
 
-function HeatmapMaterial({ incidents }) {
-  const materialRef = useRef();
+function RoadSegment({ start, end, width = 3 }) {
+  const [startX, startZ] = start;
+  const [endX, endZ] = end;
+  const length = Math.hypot(endX - startX, endZ - startZ) + width;
+  const angle = Math.atan2(endZ - startZ, endX - startX);
+  return <mesh position={[(startX + endX) / 2, 0.015, (startZ + endZ) / 2]} rotation={[0, -angle, 0]} receiveShadow>
+    <boxGeometry args={[length, 0.06, width]} />
+    <meshStandardMaterial color="#cbd5e1" roughness={0.9} metalness={0.04} />
+  </mesh>;
+}
+
+function SafePathRoute({ routePath }) {
+  const points = useMemo(() => (routePath.length ? routePath : DEFAULT_ROUTE).map(([x, z]) => new THREE.Vector3(x, 0.16, z)), [routePath]);
+  const curve = useMemo(() => {
+    const path = new THREE.CurvePath();
+    for (let index = 0; index < points.length - 1; index += 1) path.add(new THREE.LineCurve3(points[index], points[index + 1]));
+    return path;
+  }, [points]);
+  const dotRef = useRef();
+  useFrame(({ clock }) => { if (dotRef.current) dotRef.current.position.copy(curve.getPointAt((clock.getElapsedTime() * 0.12) % 1)); });
+  return <group>
+    <Line points={points} color="#2563eb" lineWidth={3} />
+    <mesh ref={dotRef}><sphereGeometry args={[0.55, 16, 16]} /><meshBasicMaterial color="#2563eb" /></mesh>
+  </group>;
+}
+
+function IncidentMarker({ incident, isSelected, onSelect, showLabel }) {
+  const pulseRef = useRef();
+  const color = incident.severity === "high" ? "#ef4444" : incident.severity === "medium" ? "#f59e0b" : "#eab308";
+  useFrame(({ clock }) => {
+    if (pulseRef.current) {
+      const pulse = Math.sin(clock.getElapsedTime() * 5 + incident.x) * 0.2;
+      pulseRef.current.scale.setScalar(1 + pulse);
+      pulseRef.current.material.opacity = 0.55 + pulse;
+    }
+  });
+  return <group position={[incident.x, 0.28, incident.z]} onClick={(event) => { event.stopPropagation(); onSelect?.(incident.id); }}>
+    <mesh ref={pulseRef} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[isSelected ? 1.25 : 1, isSelected ? 2.45 : 2, 32]} /><meshBasicMaterial color={color} transparent opacity={0.8} /></mesh>
+    <mesh position={[0, 0.25, 0]}><sphereGeometry args={[isSelected ? 0.48 : 0.35, 16, 16]} /><meshBasicMaterial color={isSelected ? "#ffffff" : color} /></mesh>
+    {showLabel && <Html position={[0, 2, 0]} center transform sprite distanceFactor={11} zIndexRange={[20, 0]}><div style={{ ...labelStyle, borderColor: color, color }}>{incident.title}</div></Html>}
+  </group>;
+}
+
+function GuardMarker({ guard, showLabels }) {
+  return <group position={[guard.x, 1, guard.z]}>
+    <mesh><sphereGeometry args={[0.5, 16, 16]} /><meshStandardMaterial color="#3b82f6" roughness={0.2} metalness={0.8} /></mesh>
+    {showLabels && <Html position={[0, 1.5, 0]} center transform sprite distanceFactor={12} zIndexRange={[10, 0]}><div style={labelStyle}>{guard.name} · {guard.status}</div></Html>}
+  </group>;
+}
+
+function CameraMarker({ camera, showLabels }) {
+  const broken = camera.status === "broken";
+  return <group position={[camera.x, 6, camera.z]}>
+    <mesh position={[0, -3, 0]}><cylinderGeometry args={[0.1, 0.1, 6]} /><meshStandardMaterial color="#64748b" /></mesh>
+    <mesh rotation={[0, camera.heading, 0]}><boxGeometry args={[0.6, 0.4, 0.8]} /><meshStandardMaterial color={broken ? "#ef4444" : "#1e293b"} /></mesh>
+    {showLabels && <Html position={[0, 1.4, 0]} center transform sprite distanceFactor={12} zIndexRange={[10, 0]}><div style={{ ...labelStyle, color: broken ? "#dc2626" : "#334155" }}>{camera.name}{broken ? " · Offline" : ""}</div></Html>}
+  </group>;
+}
+
+function HeatmapPlane({ type, zones }) {
   const uniforms = useMemo(() => {
-    const points = Array.from({ length: MAX_INCIDENTS }, (_, index) => {
-      const incident = incidents[index];
-      return new THREE.Vector3(incident?.x || 0, incident?.z || 0, incident?.intensity || 0);
+    const positions = new Float32Array(40);
+    const parameters = new Float32Array(40);
+    const matchingZones = zones.filter((zone) => zone.type === type).slice(0, 20);
+    matchingZones.forEach((zone, index) => {
+      positions[index * 2] = zone.x;
+      positions[index * 2 + 1] = zone.z;
+      parameters[index * 2] = zone.radius;
+      parameters[index * 2 + 1] = zone.intensity;
     });
     return {
-      uTime: { value: 0 },
-      uPoints: { value: points },
-      uPointCount: { value: Math.min(incidents.length, MAX_INCIDENTS) },
+      uPositions: { value: positions },
+      uParameters: { value: parameters },
+      uCount: { value: matchingZones.length },
+      uColor: { value: new THREE.Color(type === "danger" ? "#ef4444" : "#2563eb") },
     };
-  }, [incidents]);
-
-  useFrame(({ clock }) => {
-    if (materialRef.current) materialRef.current.uniforms.uTime.value = clock.elapsedTime;
-  });
-
-  const vertexShader = `
-    varying vec2 vPosition;
-    void main() {
-      vPosition = position.xy;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `;
-  const fragmentShader = `
-    uniform float uTime;
-    uniform vec3 uPoints[${MAX_INCIDENTS}];
-    uniform int uPointCount;
-    varying vec2 vPosition;
-    vec3 heatColor(float intensity) {
-      vec3 cold = vec3(0.01, 0.08, 0.16);
-      vec3 cyan = vec3(0.0, 0.72, 0.72);
-      vec3 yellow = vec3(0.95, 0.72, 0.08);
-      vec3 red = vec3(1.0, 0.12, 0.16);
-      if (intensity < 0.4) return mix(cold, cyan, intensity / 0.4);
-      if (intensity < 0.9) return mix(cyan, yellow, (intensity - 0.4) / 0.5);
-      return mix(yellow, red, min((intensity - 0.9) / 1.5, 1.0));
-    }
-    void main() {
-      float totalHeat = 0.0;
-      for (int index = 0; index < ${MAX_INCIDENTS}; index++) {
-        if (index >= uPointCount) break;
-        vec3 point = uPoints[index];
-        float distanceToPoint = distance(vPosition, point.xy);
-        float pulse = 1.0 + 0.12 * sin(uTime * 3.0 + float(index));
-        totalHeat += (point.z * pulse) / (pow(distanceToPoint * 0.4, 2.0) + 1.0);
-      }
-      float edgeFade = 1.0 - smoothstep(40.0, 60.0, length(vPosition));
-      float alpha = smoothstep(0.05, 0.5, totalHeat) * 0.82 * edgeFade;
-      gl_FragColor = vec4(heatColor(totalHeat), alpha);
-    }
-  `;
-
-  return <shaderMaterial ref={materialRef} vertexShader={vertexShader} fragmentShader={fragmentShader} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />;
+  }, [type, zones]);
+  const vertexShader = `varying vec3 vWorldPosition; void main() { vec4 worldPosition = modelMatrix * vec4(position, 1.0); vWorldPosition = worldPosition.xyz; gl_Position = projectionMatrix * viewMatrix * worldPosition; }`;
+  const fragmentShader = `uniform float uPositions[40]; uniform float uParameters[40]; uniform int uCount; uniform vec3 uColor; varying vec3 vWorldPosition; void main() { float totalHeat = 0.0; for (int index = 0; index < 20; index++) { if (index >= uCount) break; vec2 position = vec2(uPositions[index * 2], uPositions[index * 2 + 1]); float radius = uParameters[index * 2]; float intensity = uParameters[index * 2 + 1]; float distanceToZone = distance(vWorldPosition.xz, position); totalHeat += smoothstep(radius, 0.0, distanceToZone) * intensity; } gl_FragColor = vec4(uColor, clamp(totalHeat, 0.0, 0.48)); }`;
+  return <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, type === "danger" ? 0.035 : 0.045, 0]} renderOrder={1}>
+    <planeGeometry args={[150, 150]} />
+    <shaderMaterial vertexShader={vertexShader} fragmentShader={fragmentShader} uniforms={uniforms} transparent depthWrite={false} />
+  </mesh>;
 }
 
-function Building({ data }) {
-  return (
-    <group position={[data.x, data.h / 2, data.z]}>
-      <mesh>
-        <boxGeometry args={[data.w, data.h, data.d]} />
-        <meshStandardMaterial color={data.type === "core" ? "#123b42" : "#10232f"} roughness={0.3} metalness={0.8} transparent opacity={0.9} />
-      </mesh>
-      <mesh>
-        <boxGeometry args={[data.w + 0.1, data.h + 0.1, data.d + 0.1]} />
-        <meshBasicMaterial color={data.type === "core" ? "#f59e0b" : "#2dd4bf"} wireframe transparent opacity={0.24} blending={THREE.AdditiveBlending} />
-      </mesh>
-    </group>
-  );
+function CampusScene({ incidents, activeIncidentId, onIncidentSelect, routePath, layers, viewMode, heatZones }) {
+  const isSecurity = viewMode === "security";
+  return <>
+    <ambientLight intensity={0.62} color="#ffffff" />
+    <directionalLight position={[50, 80, 20]} intensity={1.2} color="#fdf8f6" castShadow shadow-mapSize={[1024, 1024]} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow><planeGeometry args={[150, 150]} /><meshStandardMaterial color="#e2e8f0" roughness={1} /></mesh>
+    {PHYSICAL_ROADS.map(([start, end], index) => <RoadSegment key={`road-${index}`} start={start} end={end} />)}
+    {layers.heatmap && <><HeatmapPlane type="danger" zones={heatZones} /><HeatmapPlane type="population" zones={heatZones} /></>}
+    {BUILDINGS.map((building) => <Building key={building.id} building={building} showLabels />)}
+    {layers.heatmap && incidents.map((incident) => <IncidentMarker key={incident.id} incident={incident} isSelected={activeIncidentId === incident.id} onSelect={onIncidentSelect} showLabel={activeIncidentId === incident.id} />)}
+    {isSecurity ? <>
+      {layers.patrols && GUARDS.map((guard) => <GuardMarker key={guard.id} guard={guard} showLabels />)}
+      {layers.cctv && CAMERAS.map((camera) => <CameraMarker key={camera.id} camera={camera} showLabels />)}
+    </> : <SafePathRoute routePath={routePath} />}
+    <OrbitControls makeDefault enablePan={false} enableDamping dampingFactor={0.08} minDistance={20} maxDistance={140} maxPolarAngle={Math.PI / 2 - 0.1} />
+  </>;
 }
 
-function IncidentMarker({ incident, isSelected, onClick }) {
-  const markerRef = useRef();
-  const height = incident.intensity * 4;
-  const color = incident.intensity > 3 ? "#ef4444" : incident.intensity > 2 ? "#facc15" : "#22d3ee";
-
-  useFrame(({ clock }) => {
-    if (markerRef.current) {
-      markerRef.current.scale.y = 1 + Math.sin(clock.elapsedTime * 4 + incident.x) * 0.1;
-      markerRef.current.material.opacity = 0.45 + Math.sin(clock.elapsedTime * 6 + incident.z) * 0.25;
-    }
-  });
-
-  return (
-    <group position={[incident.x, height / 2, incident.z]}>
-      <mesh ref={markerRef}>
-        <cylinderGeometry args={[0.5, 0.5, height, 16]} />
-        <meshBasicMaterial color={isSelected ? "#ffffff" : color} transparent opacity={0.6} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
-      <mesh position={[0, height / 2 + 0.2, 0]} onClick={onClick}>
-        <sphereGeometry args={[isSelected ? 0.8 : 0.65, 12, 12]} />
-        <meshBasicMaterial color={color} transparent opacity={isSelected ? 0.95 : 0.5} blending={THREE.AdditiveBlending} />
-      </mesh>
-      <mesh>
-        <cylinderGeometry args={[0.1, 0.1, height * 1.1, 8]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.85} />
-      </mesh>
-    </group>
-  );
+function severityOf(incident) {
+  if (incident.severity) return incident.severity;
+  if (typeof incident.intensity === "number") return incident.intensity > 3 ? "high" : incident.intensity > 2 ? "medium" : "low";
+  return incident.priority === "URGENT" ? "high" : incident.priority === "ATTENTION" ? "medium" : "low";
 }
 
-function SafeRouteLine({ routePath }) {
-  if (!routePath?.length) return null;
-  const points = routePath.map(([x, z]) => new THREE.Vector3(x, 0.18, z));
-  const geometry = new THREE.BufferGeometry().setFromPoints(points);
-  return <line geometry={geometry}><lineBasicMaterial color="#5eead4" linewidth={2} transparent opacity={0.95} /></line>;
+function LegendRow({ color, label, outline = false, icon: Icon, muted = false }) {
+  return <div className={`campus-map-legend-row${muted ? " is-muted" : ""}`}>
+    {Icon ? <Icon size={14} color={color} strokeWidth={2.2} /> : <span className={`campus-map-legend-swatch${outline ? " is-outline" : ""}`} style={outline ? { borderColor: color } : { backgroundColor: color }} />}
+    <span>{label}</span>
+  </div>;
 }
 
-function CampusControls() {
-  const { camera, gl } = useThree();
-  const controlsRef = useRef();
-
-  useFrame(() => controlsRef.current?.update());
-
-  return <primitive ref={controlsRef} object={new ThreeOrbitControls(camera, gl.domElement)} enablePan={false} enableDamping autoRotate autoRotateSpeed={0.3} minDistance={20} maxDistance={80} maxPolarAngle={Math.PI / 2 - 0.05} />;
-}
-
-function PatrolRoute() {
-  const geometry = useMemo(() => new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(-28, 0.18, -18),
-    new THREE.Vector3(-8, 0.18, -4),
-    new THREE.Vector3(12, 0.18, 10),
-    new THREE.Vector3(28, 0.18, 10),
-  ]), []);
-  return <line geometry={geometry}><lineBasicMaterial color="#34d399" transparent opacity={0.8} /></line>;
-}
-
-function CampusGrid() {
-  const lines = [];
-  for (let position = -50; position <= 50; position += 1) {
-    const isSection = position % 5 === 0;
-    lines.push(<line key={`x-${position}`}><bufferGeometry><bufferAttribute attach="attributes-position" count={2} array={new Float32Array([-50, 0, position, 50, 0, position])} itemSize={3} /></bufferGeometry><lineBasicMaterial color={isSection ? "#2dd4bf" : "#075e58"} transparent opacity={isSection ? 0.5 : 0.25} /></line>);
-    lines.push(<line key={`z-${position}`}><bufferGeometry><bufferAttribute attach="attributes-position" count={2} array={new Float32Array([position, 0, -50, position, 0, 50])} itemSize={3} /></bufferGeometry><lineBasicMaterial color={isSection ? "#2dd4bf" : "#075e58"} transparent opacity={isSection ? 0.5 : 0.25} /></line>);
-  }
-  return <group position={[0, -0.01, 0]}>{lines}</group>;
-}
-
-function CampusScene({ incidents, activeIncidentId, onIncidentSelect, routePath, layers }) {
-  const buildings = useMemo(() => generateCampusLayout(), []);
-  return (
-    <>
-      <ambientLight intensity={0.35} color="#164e63" />
-      <directionalLight position={[20, 30, -20]} intensity={1.3} color="#dffcf4" />
-      <pointLight position={[0, 10, 0]} intensity={2} color="#10b981" distance={50} />
-      <CampusGrid />
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[120, 120, 64, 64]} />
-        {layers.heatmap && <HeatmapMaterial incidents={incidents} />}
-      </mesh>
-      {buildings.map((building, index) => <Building key={`building-${index}`} data={building} />)}
-      <SafeRouteLine routePath={routePath} />
-      {incidents.map((incident) => <IncidentMarker key={incident.id} incident={incident} isSelected={activeIncidentId === incident.id} onClick={() => onIncidentSelect?.(incident.id)} />)}
-      {layers.patrols && <PatrolRoute />}
-      <CampusControls />
-    </>
-  );
-}
-
-export default function CampusHeatmap3D({ incidents = CAMPUS_INCIDENTS, activeIncidentId = null, onIncidentSelect, routePath = [], layers = { heatmap: true, patrols: false }, className = "" }) {
-  return (
-    <div className={`campus-heatmap ${className}`}>
-      <Canvas shadows camera={{ position: [35, 30, 45], fov: 45 }} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
-        <color attach="background" args={["#050b12"]} />
-        <fog attach="fog" args={["#050b12", 30, 90]} />
-        <CampusScene incidents={incidents} layers={layers} activeIncidentId={activeIncidentId} onIncidentSelect={onIncidentSelect} routePath={routePath} />
-      </Canvas>
-      <div className="campus-heatmap-vignette" />
+function MapLegend({ viewMode, layers }) {
+  const isSecurity = viewMode === "security";
+  return <aside className="campus-map-legend" aria-label="Campus map legend">
+    <div className="campus-map-legend-title"><Map size={15} /><span>Map Legend</span></div>
+    <div className="campus-map-legend-section">
+      <LegendRow color="#94a3b8" label="Academic Zone" outline />
+      <LegendRow color="#fecdd3" label="Hostel Zone" />
+      <LegendRow color="#bbf7d0" label="Utility & Services" />
+      <LegendRow color="#86efac" label="Parks & Grounds" />
+      <LegendRow color="#cbd5e1" label="Campus Roads" />
     </div>
-  );
+    <div className="campus-map-legend-section campus-map-legend-dynamic">
+      {isSecurity ? <>
+        <LegendRow icon={AlertTriangle} color="#ef4444" label="High Priority Alert" muted={!layers.heatmap} />
+        <LegendRow icon={AlertTriangle} color="#f59e0b" label="Medium Priority Alert" muted={!layers.heatmap} />
+        <LegendRow icon={User} color="#3b82f6" label="Active Security Guard" muted={!layers.patrols} />
+        <LegendRow icon={Camera} color="#334155" label="Online CCTV" muted={!layers.cctv} />
+        <LegendRow icon={Camera} color="#ef4444" label="Offline CCTV" muted={!layers.cctv} />
+        <LegendRow icon={Flame} color="#ef4444" label="Dynamic danger zones" muted={!layers.heatmap} />
+        <LegendRow icon={Users} color="#2563eb" label="Crowd-density zones" muted={!layers.heatmap} />
+      </> : <>
+        <LegendRow icon={Navigation} color="#2563eb" label="Active Safe Route" />
+        <LegendRow icon={User} color="#94a3b8" label="You are here (Gate)" />
+        <LegendRow icon={AlertTriangle} color="#f59e0b" label="Reported Hazard" muted={!layers.heatmap} />
+      </>}
+    </div>
+  </aside>;
+}
+
+export default function CampusHeatmap3D({ incidents, activeIncidentId = null, onIncidentSelect, routePath = [], layers = { heatmap: true, patrols: false }, className = "", viewMode }) {
+  const resolvedViewMode = viewMode || (Object.hasOwn(layers, "cctv") ? "security" : "student");
+  const mapIncidents = useMemo(() => (incidents || DEFAULT_INCIDENTS).map((incident, index) => {
+    const fallback = DEFAULT_INCIDENTS[index % DEFAULT_INCIDENTS.length];
+    return { id: incident.id, title: incident.title || incident.type || "Campus incident", x: Number.isFinite(incident.x) ? incident.x : fallback.x, z: Number.isFinite(incident.z) ? incident.z : fallback.z, severity: severityOf(incident) };
+  }), [incidents]);
+  const heatZones = useMemo(() => [
+    ...mapIncidents.map((incident) => ({
+      id: `danger-${incident.id}`,
+      x: incident.x,
+      z: incident.z,
+      radius: incident.severity === "high" ? 15 : incident.severity === "medium" ? 11 : 8,
+      intensity: incident.severity === "high" ? 0.48 : incident.severity === "medium" ? 0.34 : 0.22,
+      type: "danger",
+    })),
+    ...POPULATION_ZONES,
+  ], [mapIncidents]);
+  return <div className={`campus-heatmap ${className}`}>
+    <Canvas shadows camera={{ position: [-30, 60, 80], fov: 40 }} gl={{ antialias: true }}>
+      <color attach="background" args={["#f8fafc"]} />
+      <CampusScene incidents={mapIncidents} activeIncidentId={activeIncidentId} onIncidentSelect={onIncidentSelect} routePath={routePath} layers={layers} viewMode={resolvedViewMode} heatZones={heatZones} />
+    </Canvas>
+    <MapLegend viewMode={resolvedViewMode} layers={layers} />
+    <div className="campus-heatmap-vignette campus-heatmap-vignette--light" />
+  </div>;
 }
