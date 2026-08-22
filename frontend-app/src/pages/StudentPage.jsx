@@ -288,7 +288,7 @@ function SwipeToSOS({ isSOSActive, onActivateSOS, onCancelSOS, sosAck }) {
   );
 }
 
-function EmbeddedChatAssistant({ studentName, greeting }) {
+function EmbeddedChatAssistant({ studentName, greeting, studentData }) {
   const [question, setQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState([
@@ -321,7 +321,10 @@ function EmbeddedChatAssistant({ studentName, greeting }) {
               {
                 role: "system",
                 content:
-                  "You are Campus Assistant AI. Be concise, supportive, and use this student context: attendance 82%, assignments 76%, projects 88%, exams 71%, participation 64%.",
+                  `You are Campus Assistant AI, an intelligent campus companion for a student named ${studentName || "the student"} on the Campus OS platform.
+You have access to their live academic data: attendance ${studentData?.attendance || "82%"}, CGPA ${studentData?.cgpa || "N/A"}, mentor: ${studentData?.mentor || "Unassigned"}.
+You can help with: course advice, study planning, safe campus routes, exam preparation tips, fee queries, placement guidance, mental health resources, and campus navigation.
+Be concise, warm, and actionable. Use bullet points when listing things. Always encourage the student.`,
               },
               ...messages.map((m) => ({ role: m.role, content: m.text })),
               { role: "user", content: prompt },
@@ -717,10 +720,23 @@ export default function StudentPage() {
                     <div className="student-status-card">
                       <span>Attendance</span>
                       <div>
-                        <strong>{dashboard.summary.attendance.value}</strong>
+                        <strong>{dashboard.summary.attendance?.value || dashboard.summary.attendance}</strong>
                         <b className="status-safe">
-                          {dashboard.summary.attendance.status}
+                          {dashboard.summary.attendance?.status || "Live"}
                         </b>
+                      </div>
+                    </div>
+                    <div className="student-status-card">
+                      <span>CGPA</span>
+                      <div>
+                        <strong>{dashboard.summary.cgpa || "N/A"}</strong>
+                        <b className="status-cleared">Live</b>
+                      </div>
+                    </div>
+                    <div className="student-status-card">
+                      <span>Faculty Mentor</span>
+                      <div>
+                        <strong style={{ fontSize: "14px", lineHeight: "1.2", marginTop: "4px" }}>{dashboard.summary.mentor || "Unassigned"}</strong>
                       </div>
                     </div>
                     <div className="student-status-card">
@@ -800,8 +816,8 @@ export default function StudentPage() {
                   <div className="student-status-card">
                     <span>Overall Attendance</span>
                     <div>
-                      <strong>{dashboard.summary.attendance.value}</strong>
-                      <b className="status-safe">{dashboard.summary.attendance.status} (Eligible for Exams)</b>
+                      <strong>{dashboard.summary.attendance?.value || dashboard.summary.attendance}</strong>
+                      <b className="status-safe">{dashboard.summary.attendance?.status || "Live"} (Eligible for Exams)</b>
                     </div>
                   </div>
                   <div className="student-status-card">
@@ -989,7 +1005,7 @@ export default function StudentPage() {
                     <ArrowLeft size={14} /> Back to Overview
                   </button>
                 </div>
-                <EmbeddedChatAssistant studentName={user.name} greeting={dashboard.assistant?.greeting} />
+                <EmbeddedChatAssistant studentName={user.name} greeting={dashboard.assistant?.greeting} studentData={dashboard.summary} />
               </motion.div>
             )}
 

@@ -15,7 +15,7 @@ const startServer = async () => {
 
     await connectDB();
 
-    await sequelize.sync();
+    await sequelize.sync({ alter: true });
 
     console.log("Database tables synchronized");
 

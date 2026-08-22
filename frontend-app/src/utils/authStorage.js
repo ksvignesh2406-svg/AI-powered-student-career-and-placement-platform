@@ -124,6 +124,8 @@ export async function registerUser(user) {
         password: user.password,
         role: user.role.toUpperCase(),
         department: user.department || undefined,
+        registerNumber: user.registerNumber || undefined,
+        studentRegisterNumber: user.studentRegisterNumber || undefined,
       }),
     });
 
